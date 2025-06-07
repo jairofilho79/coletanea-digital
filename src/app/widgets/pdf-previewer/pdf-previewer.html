@@ -1,0 +1,44 @@
+<div class="relative flex flex-col items-center min-h-screen bg-gray-100">
+    <!-- Toolbar -->
+    <div 
+        class="flex z-50 items-center gap-4 p-2 m-2 bg-gray-100 rounded-lg shadow-sm transition-all duration-200 select-none"
+    >
+        <span class="text-sm md:text-base">Página {{currentPage}} de {{totalPages}}</span>
+        <select 
+            [(ngModel)]="viewMode" 
+            (change)="changeViewMode()"
+            class="px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        >
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+        </select>
+    </div>
+
+    <!-- Canvas container -->
+    <div 
+        class="flex-1 w-full overflow-x-auto overflow-y-auto flex justify-center items-start"
+        [ngClass]="{
+            'flex-col': isWidthSmallerThenPDF,
+            'flex-row': !isWidthSmallerThenPDF
+        }"
+    >
+        <div class="relative min-w-fit p-2">
+            <div class="relative flex justify-center">
+                <canvas #pdfCanvas class="bg-white shadow-md"></canvas>
+                <!-- Navigation overlays -->
+                <div 
+                    (click)="previousPage()" 
+                    [class.opacity-15]="currentPage === 1"
+                    [class.pointer-events-none]="currentPage === 1"
+                    class="absolute left-0 top-0 h-full w-1/2 sm:w-1/4 bg-black/10 cursor-pointer transition-opacity duration-200 hover:bg-black/20 z-10"
+                ></div>
+                <div 
+                    (click)="nextPage()"
+                    [class.opacity-15]="currentPage === totalPages"
+                    [class.pointer-events-none]="currentPage === totalPages"
+                    class="absolute right-0 top-0 h-full w-1/2 sm:w-1/4 bg-black/10 cursor-pointer transition-opacity duration-200 hover:bg-black/20 z-10"
+                ></div>
+            </div>
+        </div>
+    </div>
+</div>

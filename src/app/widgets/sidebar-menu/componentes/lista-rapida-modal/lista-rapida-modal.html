@@ -1,0 +1,50 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+  <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+    <button
+      class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+      (click)="onClose()"
+      aria-label="Fechar"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    <h2 class="text-xl font-bold mb-4">Lista Rápida</h2>
+    <div *ngIf="louvorList?.length; else emptyList">
+      <ul>
+        <li *ngFor="let louvor of louvorList" class="mb-2">
+          <div class="font-semibold">{{ louvor.numero }} - {{ louvor.nome }}</div>
+          <div class="text-sm text-gray-600">{{ louvor.classificacao || 'Sem Classificação' }} | {{ louvor.categoria || 'Sem categoria' }}</div>
+        </li>
+      </ul>
+    </div>
+    <div class="mt-6">
+      <h3 class="text-lg font-semibold mb-2">Compartilhar PDF</h3>
+      <ng-container *ngIf="louvorList && louvorList.length > 0">
+        <ng-container *ngIf="hasPdf()">
+          <div class="flex flex-col gap-2">
+            <a
+              class="text-blue-600 underline break-all pb-4"
+              [href]="getPdfUrl()"
+              target="_blank"
+            >
+              Abrir PDF(s) no browser
+            </a>
+            <button
+              class="px-21 py-6 bg-gray-200 rounded hover:bg-gray-300 text-sm w-max"
+              (click)="copyToClipboard()"
+            >
+              {{ copied ? 'Copiado!' : 'Copiar link' }}
+            </button>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="!hasPdf()">
+          <div class="text-gray-400 text-sm">Nenhum PDF disponível para compartilhar.</div>
+        </ng-container>
+      </ng-container>
+    </div>
+    <ng-template #emptyList>
+      <div class="text-gray-500">Nenhum louvor adicionado.</div>
+    </ng-template>
+  </div>
+</div>
