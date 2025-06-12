@@ -11,7 +11,6 @@ import { Louvor } from '../../models/louvor';
 })
 export class SidebarMenu {
   isOpen = false;
-  @Input() canShowListaRapida = true;
   @Input() louvorList: Louvor[] = [];
 
   openSidebar() {
@@ -31,5 +30,9 @@ export class SidebarMenu {
 
   closeListaRapidaModal() {
     this.showListaRapidaModal = false;
+  }
+
+  goHome() {
+    window.location.href = '/';
   }
 }

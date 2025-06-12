@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environments';
 import { Louvor } from '../../models/louvor';
 import { SearchOptions } from "../../widgets/search-options/search-options";
+import { LouvoresService } from '../../services/louvores/louvores-service';
 
 @Component({
   selector: 'app-pdf-collection',
@@ -15,22 +16,14 @@ export class PdfCollection {
 
   louvoresList: Louvor[] = [];
 
-  constructor(private route: ActivatedRoute) {
+  constructor(private route: ActivatedRoute, private louvoresService: LouvoresService) {
   }
   ngOnInit(): void {
     const pdfs = JSON.parse(this.route.snapshot.queryParamMap.get('pdfs') || '[]') as string[];
-    console.log('PDF ID:', pdfs);
 
-    fetch(environment.apiUrl + '/pdfs/' + this.route.snapshot.queryParamMap.get('pdfs'))
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('PDF not found');
-      })
-      .then(pdfsData => {
-        this.louvoresList = pdfsData;
-        console.log('PDFs: ', pdfsData);
+    Promise.all(pdfs.map(pdf => this.louvoresService.getLouvorByPdfId(pdf)))
+      .then(louvores => {
+        this.louvoresList = louvores.filter((louvor): louvor is Louvor => !!louvor);
       })
       .catch(error => {
         console.error(error);

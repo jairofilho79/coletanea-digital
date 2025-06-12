@@ -1,7 +1,8 @@
 // src/environments/environment.ts
 export const environment = {
-    production: false,
-    apiUrl: 'http://localhost:4123/api',
-    pdfUrlBase: 'http://localhost:4123/api/pdfFile',
-    baseUrl: 'http://localhost:4200',
+    production: true,
+    urlApi: '', //Sem uso atual (base da url da api)
+    pdfUrlBaseApi: '', //Sem uso atual (pegar os metatados dos pdfs)
+    pdfFileUrlApi: '', //cloudfront onde os PDFs estão
+    baseUrl: '', // CloudFront onde o front está hospedado
 };

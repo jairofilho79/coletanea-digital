@@ -117,16 +117,6 @@ app.get('/api/search/:s', (req, res) => {
     res.json(louvores);
 });
 
-app.get('/api/pdfs/:ids', (req, res) => {
-    const pdfIds = JSON.parse(req.params.ids);
-    const pdfs = pdfIds.map(id => mockPdfs[id]).filter(pdf => pdf);
-    if (pdfs.length > 0) {
-        res.json(pdfs);
-    } else {
-        res.status(404).send('PDFs not found');
-    }
-});
-
 app.get('/api/pdf/:id', (req, res) => {
     const pdfId = req.params.id;
     const pdf = mockPdfs[pdfId];

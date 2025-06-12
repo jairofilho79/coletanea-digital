@@ -1,11 +1,11 @@
 <div class="louvor-card">
   <div class="louvor-header">
-    <span class="louvor-numero">#{{ louvor.numero || "CC" }} {{ louvor.nome }}</span>
+    <span class="louvor-numero">#{{ louvor.numero || "#" }} {{ louvor.nome }}</span>
   </div>
   <div class="louvor-info-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 1rem;">
-    <span>{{ louvor.classificacao || 'Sem Classificação' }}</span>
+    <span>{{ (louvor.classificacao | classificacao) || 'Sem Classificação' }}</span>
     <button class="go-link-btn" (click)="openPdf($event)" title="Abrir PDF">🔗</button>
     <span>{{ louvor.categoria || 'Sem categoria' }}</span>
-    <button *ngIf="canAddLouvor" class="add-list-btn" (click)="addToList($event, louvor.pdfId)" title="Adicionar à lista">➕</button>
+    <button *ngIf="canAddLouvor" class="add-list-btn" (click)="addToList($event)" title="Adicionar à lista">➕</button>
   </div>
 </div>

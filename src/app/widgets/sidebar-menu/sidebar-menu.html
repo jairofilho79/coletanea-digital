@@ -13,13 +13,18 @@
         </button>
     </div>
     <ul class="mt-8 space-y-3 px-4">
-    <li class="relative flex items-center" *ngIf="canShowListaRapida">
+    <li class="relative flex items-center">
         <a class="hover:text-blue-600 flex items-center cursor-pointer text-base font-medium" (click)="openListaRapidaModal($event)">
             Lista Rápida
             <span
                 class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
                 {{ louvorList.length }}
             </span>
+        </a>
+    </li>
+    <li>
+        <a class="hover:text-blue-600 flex items-center cursor-pointer text-base font-medium" (click)="goHome()">
+            Pesquisador
         </a>
     </li>
     <!-- <li>
@@ -50,6 +55,11 @@
                     class="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
                     {{ louvorList.length }}
                 </span>
+            </a>
+        </li>
+        <li class="relative">
+            <a class="hover:text-blue-600 flex items-center cursor-pointer" (click)="goHome()">
+                Pesquisador
             </a>
         </li>
         <li>

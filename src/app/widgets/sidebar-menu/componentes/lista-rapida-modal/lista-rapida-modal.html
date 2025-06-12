@@ -1,20 +1,61 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-    <button
-      class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-      (click)="onClose()"
-      aria-label="Fechar"
-    >
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative max-h-screen overflow-y-auto">
+    <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700" (click)="onClose()" aria-label="Fechar">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
     <h2 class="text-xl font-bold mb-4">Lista Rápida</h2>
     <div *ngIf="louvorList?.length; else emptyList">
-      <ul>
-        <li *ngFor="let louvor of louvorList" class="mb-2">
-          <div class="font-semibold">{{ louvor.numero }} - {{ louvor.nome }}</div>
-          <div class="text-sm text-gray-600">{{ louvor.classificacao || 'Sem Classificação' }} | {{ louvor.categoria || 'Sem categoria' }}</div>
+      <ul class="max-h-[70vh] overflow-y-auto pr-2">
+        <li *ngFor="let louvor of louvorList; let i = index" class="mb-2">
+          <div class="grid grid-cols-12 gap-2 items-start">
+            <!-- Left column (2/12) - Position controls -->
+            <div class="col-span-2 flex flex-col items-center">
+              <p *ngIf="editingIndex !== i" 
+                 class="text-xs bg-gray-200 px-2 py-1 rounded cursor-pointer hover:bg-gray-300"
+                 (click)="startEditing(i)">
+                #{{ i + 1 }}
+              </p>
+              <div *ngIf="editingIndex === i" class="flex flex-col items-center gap-1">
+                <input type="number" 
+                       [(ngModel)]="newPosition" 
+                       [min]="1" 
+                       [max]="louvorList.length"
+                       class="w-12 text-xs text-center border rounded px-1 py-1"
+                       (keyup.enter)="confirmReorder()"
+                       (keyup.escape)="cancelEditing()" 
+                       #positionInput>
+                <div class="flex gap-1">
+                  <button (click)="confirmReorder()" 
+                          class="text-green-600 hover:text-green-800 text-sm"
+                          title="Confirmar">
+                    ✅
+                  </button>
+                  <button (click)="cancelEditing()" 
+                          class="text-red-600 hover:text-red-800 text-sm" 
+                          title="Cancelar">
+                    ❌
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Middle column (8/12) - Content -->
+            <div class="col-span-8 px-2">
+              <div class="font-semibold">{{ louvor.numero }} - {{ louvor.nome }}</div>
+              <div class="text-sm text-gray-600">{{ (louvor.classificacao | classificacao) || 'Sem Classificação' }} | {{ louvor.categoria || 'Sem categoria' }}</div>
+            </div>
+            
+            <!-- Right column (2/12) - Remove button -->
+            <div class="col-span-2 flex justify-center">
+              <button (click)="removeItem(i)" 
+                      [class]="getRemoveButtonClass(i)"
+                      [title]="removingIndex === i ? 'Clique novamente para remover' : 'Remover item'">
+                {{ getRemoveButtonText(i) }}
+              </button>
+            </div>
+          </div>
         </li>
       </ul>
     </div>
@@ -23,17 +64,10 @@
       <ng-container *ngIf="louvorList && louvorList.length > 0">
         <ng-container *ngIf="hasPdf()">
           <div class="flex flex-col gap-2">
-            <a
-              class="text-blue-600 underline break-all pb-4"
-              [href]="getPdfUrl()"
-              target="_blank"
-            >
+            <a class="text-blue-600 underline break-all pb-4" [href]="getPdfUrl()" target="_blank">
               Abrir PDF(s) no browser
             </a>
-            <button
-              class="px-21 py-6 bg-gray-200 rounded hover:bg-gray-300 text-sm w-max"
-              (click)="copyToClipboard()"
-            >
+            <button class="px-21 py-6 bg-gray-200 rounded hover:bg-gray-300 text-sm w-max" (click)="copyToClipboard()">
               {{ copied ? 'Copiado!' : 'Copiar link' }}
             </button>
           </div>
