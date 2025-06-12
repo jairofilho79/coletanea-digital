@@ -5,6 +5,7 @@ import { Louvor } from '../../../../models/louvor';
 import { environment } from '../../../../../environments/environments';
 import { ROUTES_PATH_STR } from '../../../../routes.enum';
 import { ClassificacaoPipe } from '../../../../utils/classificacao.pipe';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-lista-rapida-modal',
@@ -23,6 +24,8 @@ export class ListaRapidaModal {
   removeCountdown: number = 0;
   removeTimeout: any = null;
 
+  constructor(private router: Router) {}
+
   onClose() {
     this.close.emit();
   }
@@ -32,11 +35,21 @@ export class ListaRapidaModal {
   }
 
   getPdfUrl(): string {
-    return environment.baseUrl + '/' + ROUTES_PATH_STR.PDF_COLLECTION + '?pdfs=' + JSON.stringify(this.louvorList.filter(l => l.pdfId).map(l => l.pdfId));
+    const url = this.router.serializeUrl(
+      this.router.createUrlTree([ROUTES_PATH_STR.PDF_COLLECTION], {
+        queryParams: { pdfs: JSON.stringify(this.louvorList.filter(l => l.pdfId).map(l => l.pdfId)) }
+      })
+    );
+    return window.location.origin + url;
   }
 
-  getPdfPreviewerUrl() {
-    return environment.baseUrl + '/' + ROUTES_PATH_STR.PDF_VIEWER + '?pdfs=' + JSON.stringify(this.louvorList.filter(l => l.pdfId).map(l => l.pdfId));
+  getPdfPreviewerUrl(): string {
+    const url = this.router.serializeUrl(
+      this.router.createUrlTree([ROUTES_PATH_STR.PDF_VIEWER], {
+        queryParams: { pdfs: JSON.stringify(this.louvorList.filter(l => l.pdfId).map(l => l.pdfId)) }
+      })
+    );
+    return window.location.origin + url;
   }
 
   copyToClipboard() {

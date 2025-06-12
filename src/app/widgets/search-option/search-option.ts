@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ClassificacaoPipe } from '../../utils/classificacao.pipe';
 import { environment } from '../../../environments/environments';
 import { ROUTES_PATH_STR } from '../../routes.enum';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-search-option',
@@ -16,13 +17,15 @@ export class SearchOption {
   @Input() canAddLouvor: boolean = true;
   @Output() addLouvor = new EventEmitter<Louvor>();
 
-  constructor() {}
+  constructor(private router: Router) { }
 
   async openPdf(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
-    const pdfUrl = environment.baseUrl + '/' + ROUTES_PATH_STR.PDF_VIEWER + '/' + this.louvor.pdfId;
-    window.open(pdfUrl, '_blank');
+    const url = this.router.serializeUrl(
+      this.router.createUrlTree([ROUTES_PATH_STR.PDF_VIEWER, this.louvor.pdfId])
+    );
+    window.open(url, '_blank');
   }
 
   addToList(event: MouseEvent) {
