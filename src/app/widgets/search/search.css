@@ -1,0 +1,102 @@
+.search-container {
+    width: 75vw;
+    min-width: 320px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    margin-right: 20px; /* Added margin-right to prevent overflow */
+}
+
+.input-wrapper input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    outline: none;
+    font-size: 1.2rem;
+    background: transparent;
+    padding: 0 90px;
+    box-sizing: border-box;
+}
+
+.outlined-btn {
+    position: absolute;
+    height: 40px;
+    min-width: 80px;
+    border: 2px solid;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 1;
+}
+
+.limpar-btn {
+    left: 8px;
+    border-color: #0f4a85;
+    color: #0f4a85;
+}
+
+.limpar-btn:disabled {
+    border-color: #adb7c1;
+    color: #adb7c1;
+    cursor: not-allowed;
+}
+
+.achar-btn {
+    right: 8px;
+    border-color: #1a2c1b;
+    color: #1a2c1b;
+}
+
+.achar-btn:disabled {
+    border-color: #adb8ae;
+    color: #adb8ae;
+    cursor: not-allowed;
+}
+
+/* Add hover effects */
+.outlined-btn:not(:disabled):hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+@media screen and (max-width: 480px) {
+    .search-container {
+        width: 95vw;
+        padding: 10px;
+    }
+
+    .input-wrapper {
+        height: auto;
+        flex-direction: column;
+        padding: 12px;
+        gap: 8px;
+        margin-right: 35px; /* Adjusted margin for mobile */
+    }
+
+    .input-wrapper input {
+        width: 100%;
+        padding: 0 8px;
+    }
+
+    .outlined-btn {
+        position: relative;
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+}

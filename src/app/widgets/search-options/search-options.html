@@ -1,0 +1,13 @@
+<ng-container *ngIf="louvores?.length === 0; else louvoresList">
+    <div class="flex justify-center items-center p-8 mx-4 text-gray-500 text-lg font-medium">
+        Nenhum Louvor Encontrado.
+    </div>
+</ng-container>
+
+<ng-template #louvoresList>
+    <div class="flex flex-col items-center gap-3 mx-4">
+        <div *ngFor="let louvor of louvores" class="w-full max-w-[420px]">
+            <app-search-option [louvor]="louvor" [canAddLouvor]="canAddLouvor" (addLouvor)="addLouvor.emit($event)" />
+        </div>
+    </div>
+</ng-template>
