@@ -1,0 +1,33 @@
+.empty-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+    color: #888;
+    font-size: 2.4rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.02em;
+}
+
+@media (max-width: 599px) {
+    .empty-message {
+        font-size: 2rem;
+        padding: 30px;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+    .empty-message {
+        font-size: 1.8rem;
+        padding: 24px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .empty-message {
+        font-size: 2.4rem;
+        padding: 32px;
+    }
+}

@@ -1,0 +1,139 @@
+.pdf-container {
+  display: flex;
+    align-items: stretch;
+    justify-content: center;
+    position: relative;
+    width: 100vw;
+}
+
+.sidebar {
+    width: 10vw;
+    background: #1976d2;
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+.sidebar.disabled {
+    opacity: 0.15;
+    pointer-events: none;
+}
+.sidebar.left {
+    border-radius: 10px 0 0 10px;
+}
+.sidebar.right {
+    border-radius: 0 10px 10px 0;
+}
+.main-viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toolbar button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toolbar button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.toolbar button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.toolbar select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.pdf-canvas {
+    margin: 0 auto;
+    display: block;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: #fff;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    .sidebar {
+        width: 5vw;
+        opacity: 0.7;
+    }
+    .toolbar {
+        font-size: 12px;
+    }
+    .pdf-canvas {
+        width: 100% !important;
+        max-width: 95vw;
+    }
+}
+@media (min-width: 601px) and (max-width: 1024px) {
+    .sidebar {
+        width: 30vw;
+    }
+    .toolbar {
+        font-size: 14px;
+    }
+}
+@media (min-width: 1025px) {
+    .sidebar {
+        width: 20vw;
+    }
+    .toolbar {
+        font-size: 16px;
+    }
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 10%;
+  height: 100%;
+  background: rgba(30, 30, 30, 0.3);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.overlay-right {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 10%;
+  height: 100%;
+  background: rgba(30, 30, 30, 0.3);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
