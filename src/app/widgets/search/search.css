@@ -1,77 +1,78 @@
-.search-container {
-    width: 75vw;
-    min-width: 320px;
-    margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
+#search-container {
+    background: var(--background-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 16px;
 }
 
-.input-wrapper {
-    position: relative;
-    width: 100%;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    background: #fff;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    padding: 0 8px;
-    box-sizing: border-box;
-    margin-right: 20px; /* Added margin-right to prevent overflow */
-}
-
-.input-wrapper input {
+#search-container input {
     flex: 1;
     height: 100%;
-    border: none;
+    border: 2px solid var(--gold-color);
     outline: none;
     font-size: 1.2rem;
-    background: transparent;
+    background: var(--background-color);
     padding: 0 90px;
     box-sizing: border-box;
+    font-family: 'Open Sans', sans-serif;
+    color: #FFF;
 }
 
-.outlined-btn {
-    position: absolute;
-    height: 40px;
-    min-width: 80px;
-    border: 2px solid;
-    background: #fff;
-    border-radius: 6px;
-    font-size: 1rem;
+/* Placeholder styling for all browsers */
+#search-container input::placeholder {
+    color: #FFF;
+    background: var(--background-color);
+    font-family: 'Open Sans', sans-serif;
+    font-style: italic;
+    opacity: 1;
+}
+
+#search-container input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-color);
+    border-color: var(--gold-color);
+    font-family: 'Open Sans', sans-serif;
+    color: #FFF;
+}
+
+.limpar-btn, .achar-btn {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: normal;
+    border: 2px solid var(--gold-color);
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    font-size: 1.1rem;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     cursor: pointer;
-    transition: all 0.2s;
-    z-index: 1;
 }
 
 .limpar-btn {
-    left: 8px;
-    border-color: #0f4a85;
-    color: #0f4a85;
+    background: var(--card-color);
+    color: var(--title-color);
 }
 
 .limpar-btn:disabled {
-    border-color: #adb7c1;
-    color: #adb7c1;
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
 .achar-btn {
-    right: 8px;
-    border-color: #1a2c1b;
-    color: #1a2c1b;
+    background: var(--background-color);
+    color: var(--gold-color);
 }
 
 .achar-btn:disabled {
-    border-color: #adb8ae;
-    color: #adb8ae;
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
-/* Add hover effects */
-.outlined-btn:not(:disabled):hover {
-    background-color: rgba(0, 0, 0, 0.04);
+/* Optional: hover effects */
+.limpar-btn:not(:disabled):hover {
+    filter: brightness(0.97);
+}
+.achar-btn:not(:disabled):hover {
+    filter: brightness(1.1);
 }
 
 @media screen and (max-width: 480px) {

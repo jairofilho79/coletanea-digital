@@ -1,5 +1,5 @@
 <div class="flex justify-center w-full p-4">
-    <div class="flex flex-col sm:flex-row w-full max-w-2xl shadow-sm rounded-lg bg-gray-50 p-3 gap-2 sm:gap-3">
+    <div id="search-container" class="flex flex-col sm:flex-row w-full max-w-2xl shadow-sm rounded-lg bg-gray-50 p-3 gap-2 sm:gap-3">
         <!-- Input field - full width on mobile -->
         <input 
             type="text" 
@@ -13,7 +13,7 @@
         <div class="flex gap-2 w-full sm:w-auto order-2">
             <button 
                 (click)="limpar()" 
-                class="flex-1 sm:flex-none px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+                class="limpar-btn"
             >
                 Limpar
             </button>
@@ -21,7 +21,7 @@
             <button 
                 (click)="buscar()"
                 [disabled]="!hasValue"
-                class="flex-1 sm:flex-none px-6 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 font-medium shadow-sm hover:shadow-md"
+                class="achar-btn"
             >
                 <span *ngIf="acharButtonText">{{acharButtonText}}</span>
                 <span *ngIf="!acharButtonText">Buscar</span>

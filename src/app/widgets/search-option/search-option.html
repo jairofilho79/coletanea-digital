@@ -2,10 +2,11 @@
   <div class="louvor-header">
     <span class="louvor-numero">#{{ louvor.numero || "#" }} {{ louvor.nome }}</span>
   </div>
+  
   <div class="louvor-info-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 1rem;">
     <span>{{ (louvor.classificacao | classificacao) || 'Sem Classificação' }}</span>
-    <button class="go-link-btn" (click)="openPdf($event)" title="Abrir PDF">🔗</button>
+    <button class="go-link-btn" (click)="openPdf($event)" title="Abrir PDF"><ng-icon name="heroArrowTopRightOnSquare" /></button>
     <span>{{ louvor.categoria || 'Sem categoria' }}</span>
-    <button *ngIf="canAddLouvor" class="add-list-btn" (click)="addToList($event)" title="Adicionar à lista">➕</button>
+    <button *ngIf="canAddLouvor" class="add-list-btn" (click)="addToList($event)" title="Adicionar à lista"><ng-icon name="heroPlus" /></button>
   </div>
 </div>
