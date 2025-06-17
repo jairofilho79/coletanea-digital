@@ -1,7 +1,17 @@
 <div class="relative flex flex-col items-center min-h-screen bg-gray-100">
+    <!-- Loading Spinner -->
+    <div *ngIf="pageRendering" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-60 z-50">
+        <svg class="animate-spin h-10 w-10 text-blue-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span class="text-lg text-blue-700 font-medium">Carregando PDF...</span>
+    </div>
+
     <!-- Toolbar -->
     <div 
         class="flex z-50 items-center gap-4 p-2 m-2 bg-gray-100 rounded-lg shadow-sm transition-all duration-200 select-none"
+        *ngIf="!pageRendering"
     >
         <span class="text-sm md:text-base">Página {{currentPage}} de {{totalPages}}</span>
         <select 
@@ -11,7 +21,20 @@
         >
             <option value="vertical">Vertical</option>
             <option value="horizontal">Horizontal</option>
+            <option value="custom">Personalizado</option>
         </select>
+        <div *ngIf="viewMode === 'custom'" class="flex items-center gap-2">
+            <input
+                type="number"
+                min="50"
+                max="300"
+                step="25"
+                [(ngModel)]="customScale"
+                (input)="changeCustomScale()"
+                class="w-12 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <span>%</span>
+        </div>
     </div>
 
     <!-- Canvas container -->

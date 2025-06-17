@@ -2,6 +2,7 @@ import { Component, ElementRef, Input, OnInit, ViewChild, HostListener } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as pdfjsLib from 'pdfjs-dist';
+import { debounceTime, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-pdf-previewer',
@@ -16,11 +17,13 @@ export class PdfPreviewer implements OnInit {
 
   protected currentPage = 1;
   protected totalPages = 0;
-  protected viewMode: 'vertical' | 'horizontal' = 'vertical';
+  protected viewMode: 'vertical' | 'horizontal' | 'custom' = 'vertical';
+  customScale: number = 100;
+  private customScaleSubject = new Subject<number>();
   protected isWidthSmallerThenPDF = false;
 
   private pdfDoc: any = null;
-  private pageRendering = false;
+  protected pageRendering = false;
   private pageNumPending: number | null = null;
 
 
@@ -37,7 +40,13 @@ export class PdfPreviewer implements OnInit {
 
   async ngOnInit() {
     try {
+      this.pageRendering = true;
       await this.loadPdf(this.pdfUrl);
+      this.customScaleSubject.pipe(debounceTime(1200)).subscribe((value) => {
+      if (value >= 50 && value <= 300) {
+        this.renderPage();
+      }
+    });
     } catch (error) {
       console.error('Error loading PDF:', error);
     }
@@ -54,11 +63,6 @@ export class PdfPreviewer implements OnInit {
   }
 
   async renderPage() {
-    if (this.pageRendering) {
-      this.pageNumPending = this.currentPage;
-      return;
-    }
-
     this.pageRendering = true;
 
     try {
@@ -68,26 +72,28 @@ export class PdfPreviewer implements OnInit {
       const toolbarHeight = 80;
       const margin = 32;
       let scale: number;
-      
+
+      this.isWidthSmallerThenPDF = window.innerWidth < viewportOriginal.height;
+
       const availableWidth = window.innerWidth - margin;
       if (this.viewMode === 'horizontal') {
-        // In horizontal mode, fit width to screen (minus margin)
         scale = availableWidth / viewportOriginal.width;
+      } else if (this.viewMode === 'custom') {
+        scale = this.customScale / 100;
       } else {
-        // In vertical mode, fit height to screen (minus toolbar and margin)
         const availableHeight = window.innerHeight - toolbarHeight - margin;
         scale = availableHeight / viewportOriginal.height;
       }
 
-      const viewport = page.getViewport({ scale });
-      const canvas = this.pdfCanvas.nativeElement;
-      canvas.height = Math.ceil(viewport.height);
-      canvas.width = Math.ceil(viewport.width);
+      const dpiScale = window.devicePixelRatio || 1;
+      const viewport = page.getViewport({ scale: scale * dpiScale });
 
-      console.log('Viewport dimensions:', availableWidth);
-      
-      this.isWidthSmallerThenPDF = (availableWidth < 595) && this.viewMode === 'vertical';
-      console.log('isWidthSmallerThenPDF:', this.isWidthSmallerThenPDF);
+      const canvas = this.pdfCanvas.nativeElement;
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+
+      canvas.style.width = `${Math.ceil(viewport.width / dpiScale)}px`;
+      canvas.style.height = `${Math.ceil(viewport.height / dpiScale)}px`;
 
       const renderContext = {
         canvasContext: canvas.getContext('2d'),
@@ -110,6 +116,12 @@ export class PdfPreviewer implements OnInit {
 
   changeViewMode() {
     this.renderPage();
+  }
+
+  changeCustomScale() {
+    if (this.viewMode === 'custom' && typeof this.customScale === 'number' && !isNaN(this.customScale)) {
+      this.customScaleSubject.next(this.customScale);
+    }
   }
 
   previousPage() {
