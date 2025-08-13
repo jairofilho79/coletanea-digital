@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
+import { AmplifyService } from '../../services/amplify.service';
+import { Material, TipoPartitura, ApiResponse } from '../../models/coletanea.models';
 
 @Component({
   selector: 'app-biblioteca',
@@ -14,75 +15,64 @@ import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
       <!-- Filtros -->
       <div class="filtros">
         <div class="filtro-grupo">
-          <label for="filtroCategoria">Categoria:</label>
-          <select id="filtroCategoria" [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()">
-            <option value="">Todas as categorias</option>
-            <option value="louvor">Louvor</option>
-            <option value="estudo-biblico">Estudo Bíblico</option>
-            <option value="hinario">Hinário</option>
-            <option value="coral">Coral</option>
-            <option value="instrumental">Instrumental</option>
-          </select>
-        </div>
-
-        <div class="filtro-grupo">
-          <label for="filtroTipo">Tipo:</label>
-          <select id="filtroTipo" [(ngModel)]="filtroTipo" (change)="aplicarFiltros()">
+          <label for="filtroCategoria">Tipo de Partitura:</label>
+          <select id="filtroCategoria" [(ngModel)]="filtroTipoPartitura" (change)="aplicarFiltros()">
             <option value="">Todos os tipos</option>
-            <option value="pdf">PDF</option>
-            <option value="audio">Áudio</option>
+            <option value="coro">Coro</option>
+            <option value="cifra">Cifra</option>
+            <option value="letra">Letra</option>
+            <option value="grade">Grade</option>
+            <option value="flauta">Flauta</option>
+            <option value="violino_I">Violino I</option>
+            <option value="violino_II">Violino II</option>
+            <option value="outros">Outros</option>
           </select>
         </div>
 
         <div class="filtro-grupo">
-          <label for="busca">Buscar:</label>
-          <input type="text" id="busca" [(ngModel)]="termoBusca" 
-                 (input)="aplicarFiltros()" placeholder="Título, descrição ou tags...">
+          <label for="termoBusca">Buscar:</label>
+          <input 
+            type="text" 
+            id="termoBusca" 
+            [(ngModel)]="termoBusca" 
+            (input)="aplicarFiltros()" 
+            placeholder="Buscar por título ou compositor...">
         </div>
       </div>
 
-      <!-- Lista de materiais -->
-      <div class="materiais-grid">
-        <div *ngFor="let material of materiaisFiltrados" class="material-card">
+      <!-- Lista de Materiais -->
+      <div class="materiais-grid" *ngIf="materiaisFiltrados.length > 0; else semMateriais">
+        <div class="material-card" *ngFor="let material of materiaisFiltrados">
           <div class="material-header">
             <h3>{{ material.titulo }}</h3>
-            <span class="tipo-badge" [ngClass]="material.tipo">
-              {{ material.tipo === 'pdf' ? 'PDF' : 'ÁUDIO' }}
-            </span>
+            <span class="tipo-badge">{{ getTipoPartituraLabel(material.tipoPartitura) }}</span>
           </div>
-
+          
           <div class="material-info">
-            <p *ngIf="material.descricao" class="descricao">{{ material.descricao }}</p>
-            
-            <div class="metadata">
-              <span class="categoria">{{ material.categoria }}</span>
-              <span class="data">{{ material.dataUpload | date:'dd/MM/yyyy' }}</span>
-              <span class="tamanho">{{ formatarTamanho(material.tamanho) }}</span>
-            </div>
-
-            <div *ngIf="material.tags.length > 0" class="tags">
-              <span *ngFor="let tag of material.tags" class="tag">{{ tag }}</span>
-            </div>
+            <p *ngIf="material.compositor"><strong>Compositor:</strong> {{ material.compositor }}</p>
+            <p *ngIf="material.descricao"><strong>Descrição:</strong> {{ material.descricao }}</p>
+            <p *ngIf="material.observacoes"><strong>Observações:</strong> {{ material.observacoes }}</p>
           </div>
 
           <div class="material-actions">
-            <button (click)="visualizarMaterial(material)" class="btn-visualizar">
-              <span *ngIf="material.tipo === 'pdf'">📄 Ver PDF</span>
-              <span *ngIf="material.tipo === 'audio'">🎵 Tocar</span>
+            <button class="btn-primary" (click)="visualizarMaterial(material)">
+              Visualizar
             </button>
-            <button (click)="baixarMaterial(material)" class="btn-baixar">
-              ⬇️ Baixar
+            <button class="btn-secondary" (click)="baixarMaterial(material)">
+              Baixar
             </button>
-            <button (click)="excluirMaterial(material)" class="btn-excluir">
-              🗑️ Excluir
+            <button class="btn-danger" (click)="excluirMaterial(material)">
+              Excluir
             </button>
           </div>
         </div>
       </div>
 
-      <div *ngIf="materiaisFiltrados.length === 0" class="sem-materiais">
-        <p>Nenhum material encontrado.</p>
-      </div>
+      <ng-template #semMateriais>
+        <div class="sem-materiais">
+          <p>Nenhum material encontrado.</p>
+        </div>
+      </ng-template>
     </div>
   `,
   styles: [`
@@ -93,27 +83,29 @@ import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
     }
 
     .filtros {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
+      display: flex;
+      gap: 20px;
       margin-bottom: 30px;
-      padding: 20px;
-      background-color: #f8f9fa;
-      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
     .filtro-grupo label {
-      display: block;
-      margin-bottom: 5px;
       font-weight: bold;
+      color: #333;
     }
 
-    .filtro-grupo input,
-    .filtro-grupo select {
-      width: 100%;
+    .filtro-grupo select,
+    .filtro-grupo input {
       padding: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       border-radius: 4px;
+      min-width: 200px;
     }
 
     .materiais-grid {
@@ -123,69 +115,49 @@ import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
     }
 
     .material-card {
-      border: 1px solid #ddd;
+      background: white;
+      border: 1px solid #e0e0e0;
       border-radius: 8px;
-      padding: 15px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .material-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
     .material-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     .material-header h3 {
       margin: 0;
-      flex: 1;
-      margin-right: 10px;
+      color: #2c3e50;
+      font-size: 1.2em;
     }
 
     .tipo-badge {
+      background: #3498db;
+      color: white;
       padding: 4px 8px;
       border-radius: 12px;
-      font-size: 12px;
-      font-weight: bold;
+      font-size: 0.8em;
+      white-space: nowrap;
     }
 
-    .tipo-badge.pdf {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    .tipo-badge.audio {
-      background-color: #28a745;
-      color: white;
-    }
-
-    .descricao {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-
-    .metadata {
-      display: flex;
-      gap: 15px;
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 10px;
-    }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
+    .material-info {
       margin-bottom: 15px;
     }
 
-    .tag {
-      background-color: #e9ecef;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-size: 12px;
+    .material-info p {
+      margin: 8px 0;
+      color: #666;
+      font-size: 0.9em;
     }
 
     .material-actions {
@@ -194,31 +166,40 @@ import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
       flex-wrap: wrap;
     }
 
-    .material-actions button {
-      padding: 6px 12px;
+    .btn-primary, .btn-secondary, .btn-danger {
+      padding: 8px 16px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 0.9em;
+      transition: background-color 0.2s;
     }
 
-    .btn-visualizar {
-      background-color: #007bff;
+    .btn-primary {
+      background: #3498db;
       color: white;
     }
 
-    .btn-baixar {
-      background-color: #6c757d;
+    .btn-primary:hover {
+      background: #2980b9;
+    }
+
+    .btn-secondary {
+      background: #95a5a6;
       color: white;
     }
 
-    .btn-excluir {
-      background-color: #dc3545;
+    .btn-secondary:hover {
+      background: #7f8c8d;
+    }
+
+    .btn-danger {
+      background: #e74c3c;
       color: white;
     }
 
-    .material-actions button:hover {
-      opacity: 0.8;
+    .btn-danger:hover {
+      background: #c0392b;
     }
 
     .sem-materiais {
@@ -226,14 +207,32 @@ import { AmplifyService, MaterialEstudo } from '../../services/amplify.service';
       padding: 40px;
       color: #666;
     }
+
+    .sem-materiais p {
+      font-size: 1.1em;
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .filtros {
+        flex-direction: column;
+      }
+      
+      .materiais-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .material-actions {
+        justify-content: center;
+      }
+    }
   `]
 })
 export class BibliotecaComponent implements OnInit {
-  materiais: MaterialEstudo[] = [];
-  materiaisFiltrados: MaterialEstudo[] = [];
+  materiais: Material[] = [];
+  materiaisFiltrados: Material[] = [];
   
-  filtroCategoria: string = '';
-  filtroTipo: string = '';
+  filtroTipoPartitura: string = '';
   termoBusca: string = '';
 
   constructor(private amplifyService: AmplifyService) {}
@@ -244,8 +243,13 @@ export class BibliotecaComponent implements OnInit {
 
   async carregarMateriais(): Promise<void> {
     try {
-      this.materiais = await this.amplifyService.listarMateriais();
-      this.aplicarFiltros();
+      const response = await this.amplifyService.listarMateriais();
+      if (response.success && response.data) {
+        this.materiais = response.data;
+        this.aplicarFiltros();
+      } else {
+        console.error('Erro ao carregar materiais:', response.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
     }
@@ -253,100 +257,101 @@ export class BibliotecaComponent implements OnInit {
 
   aplicarFiltros(): void {
     this.materiaisFiltrados = this.materiais.filter(material => {
-      // Filtro por categoria
-      if (this.filtroCategoria && material.categoria !== this.filtroCategoria) {
-        return false;
-      }
+      // Filtro por tipo de partitura
+      const passaTipoPartitura = !this.filtroTipoPartitura || 
+        material.tipoPartitura === this.filtroTipoPartitura;
 
-      // Filtro por tipo
-      if (this.filtroTipo && material.tipo !== this.filtroTipo) {
-        return false;
-      }
+      // Filtro por termo de busca (título ou compositor)
+      const passaBusca = !this.termoBusca || 
+        material.titulo.toLowerCase().includes(this.termoBusca.toLowerCase()) ||
+        (material.compositor && material.compositor.toLowerCase().includes(this.termoBusca.toLowerCase()));
 
-      // Busca textual
-      if (this.termoBusca) {
-        const termo = this.termoBusca.toLowerCase();
-        const encontrado = 
-          material.titulo.toLowerCase().includes(termo) ||
-          (material.descricao && material.descricao.toLowerCase().includes(termo)) ||
-          material.tags.some(tag => tag.toLowerCase().includes(termo));
-        
-        if (!encontrado) {
-          return false;
-        }
-      }
-
-      return true;
+      return passaTipoPartitura && passaBusca;
     });
   }
 
-  async visualizarMaterial(material: MaterialEstudo): Promise<void> {
+  getTipoPartituraLabel(tipo: TipoPartitura): string {
+    const labels: Record<TipoPartitura, string> = {
+      [TipoPartitura.CORO]: 'Coro',
+      [TipoPartitura.CIFRA]: 'Cifra',
+      [TipoPartitura.LETRA]: 'Letra',
+      [TipoPartitura.EXPERIENCIA]: 'Experiência',
+      [TipoPartitura.GRADE]: 'Grade',
+      [TipoPartitura.CORO_E_PIANO]: 'Coro e Piano',
+      [TipoPartitura.FLAUTA]: 'Flauta',
+      [TipoPartitura.OBOE]: 'Oboé',
+      [TipoPartitura.VIOLINO_I]: 'Violino I',
+      [TipoPartitura.VIOLINO_II]: 'Violino II',
+      [TipoPartitura.VIOLA]: 'Viola',
+      [TipoPartitura.VIOLONCELO]: 'Violoncelo',
+      [TipoPartitura.TROMBONE]: 'Trombone',
+      [TipoPartitura.TROMPETE]: 'Trompete',
+      [TipoPartitura.SAXOFONE_ALTO]: 'Saxofone Alto',
+      [TipoPartitura.SAXOFONE_TENOR]: 'Saxofone Tenor',
+      [TipoPartitura.SAXOFONE_SOPRANO]: 'Saxofone Soprano',
+      [TipoPartitura.FAGOTE]: 'Fagote',
+      [TipoPartitura.PERCUSSAO]: 'Percussão',
+      [TipoPartitura.OUTROS]: 'Outros'
+    };
+    return labels[tipo] || tipo;
+  }
+
+  async visualizarMaterial(material: Material): Promise<void> {
     try {
-      const arquivo = await this.amplifyService.downloadFile(material.arquivo);
+      const blob = await this.amplifyService.downloadFile(material.arquivoKey);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
       
-      if (material.tipo === 'pdf') {
-        // Abrir PDF em nova aba
-        const blob = new Blob([arquivo.body], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      } else if (material.tipo === 'audio') {
-        // Reproduzir áudio
-        const blob = new Blob([arquivo.body], { type: 'audio/mpeg' });
-        const url = window.URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.play();
-      }
+      // Limpar a URL após um tempo para liberar memória
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {
       console.error('Erro ao visualizar material:', error);
-      alert('Erro ao carregar o arquivo.');
+      alert('Erro ao visualizar o material. Tente novamente.');
     }
   }
 
-  async baixarMaterial(material: MaterialEstudo): Promise<void> {
+  async baixarMaterial(material: Material): Promise<void> {
     try {
-      const arquivo = await this.amplifyService.downloadFile(material.arquivo);
-      
-      const blob = new Blob([arquivo.body]);
-      const url = window.URL.createObjectURL(blob);
+      const blob = await this.amplifyService.downloadFile(material.arquivoKey);
+      const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${material.titulo}.${material.arquivo.split('.').pop()}`;
+      a.download = `${material.titulo}.pdf`; // Assumindo que são PDFs por padrão
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Erro ao baixar material:', error);
-      alert('Erro ao baixar o arquivo.');
+      alert('Erro ao baixar o material. Tente novamente.');
     }
   }
 
-  async excluirMaterial(material: MaterialEstudo): Promise<void> {
-    if (confirm(`Tem certeza que deseja excluir o material "${material.titulo}"?`)) {
-      try {
-        // Excluir arquivo do S3
-        await this.amplifyService.deleteFile(material.arquivo);
-        
-        // Excluir metadados do DynamoDB
-        await this.amplifyService.excluirMaterial(material.id);
-        
-        // Atualizar lista local
+  async excluirMaterial(material: Material): Promise<void> {
+    if (!confirm(`Tem certeza que deseja excluir o material "${material.titulo}"?`)) {
+      return;
+    }
+
+    try {
+      // Remover arquivo do S3
+      await this.amplifyService.removeFile(material.arquivoKey);
+      
+      // Remover registro do DynamoDB
+      const response = await this.amplifyService.deletarMaterial(material.id);
+      
+      if (response.success) {
+        // Remover da lista local
         this.materiais = this.materiais.filter(m => m.id !== material.id);
         this.aplicarFiltros();
-        
-        alert('Material excluído com sucesso.');
-      } catch (error) {
-        console.error('Erro ao excluir material:', error);
-        alert('Erro ao excluir material.');
+        alert('Material excluído com sucesso!');
+      } else {
+        alert('Erro ao excluir material: ' + response.error);
       }
+    } catch (error) {
+      console.error('Erro ao excluir material:', error);
+      alert('Erro ao excluir o material. Tente novamente.');
     }
-  }
-
-  formatarTamanho(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 }

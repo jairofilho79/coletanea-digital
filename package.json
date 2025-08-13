@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "amplify:dev": "npx ampx sandbox",
+    "amplify:build": "npx ampx generate graphql-client-code --out src/app/graphql",
+    "amplify:deploy": "npx ampx pipeline-deploy --branch main"
   },
   "private": true,
   "dependencies": {
@@ -27,6 +30,8 @@
     "@angular-devkit/build-angular": "^19.2.15",
     "@angular/cli": "^19.2.15",
     "@angular/compiler-cli": "^19.2.0",
+    "@aws-amplify/backend": "^1.16.1",
+    "@aws-amplify/backend-cli": "^1.8.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",

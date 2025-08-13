@@ -10,6 +10,8 @@
     "src/main.ts"
   ],
   "include": [
-    "src/**/*.d.ts"
+    "amplify/auth/resource.ts",
+    "amplify/data/resource.ts",
+    "amplify/storage/resource.ts"
   ]
 }

@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:PutParameter",
+        "ssm:DeleteParameter",
+        "ssm:GetParametersByPath",
+        "cloudformation:*",
+        "iam:*",
+        "s3:*",
+        "dynamodb:*",
+        "lambda:*",
+        "cognito-idp:*",
+        "cognito-identity:*",
+        "appsync:*",
+        "logs:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

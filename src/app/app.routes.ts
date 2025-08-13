@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { BibliotecaComponent } from './components/biblioteca/biblioteca.component';
+import { UploadMaterialComponent } from './components/upload-material/upload-material.component';
 
 export const routes: Routes = [
   { 
@@ -8,10 +10,10 @@ export const routes: Routes = [
   },
   { 
     path: 'biblioteca', 
-    loadComponent: () => import('./components/biblioteca/biblioteca.component').then(m => m.BibliotecaComponent)
+    component: BibliotecaComponent
   },
   { 
     path: 'upload', 
-    loadComponent: () => import('./components/upload-material/upload-material.component').then(m => m.UploadMaterialComponent)
+    component: UploadMaterialComponent
   }
 ];
