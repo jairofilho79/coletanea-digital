@@ -25,13 +25,13 @@ import { TipoPartitura, CreateMaterialForm, TipoPartituraLabels } from '../../mo
         </div>
 
         <div class="form-group">
-          <label for="compositor">Compositor</label>
+          <label for="usuarioUpload">Usuário</label>
           <input 
             type="text" 
-            id="compositor" 
-            [(ngModel)]="material.compositor" 
-            name="compositor"
-            placeholder="Nome do compositor">
+            id="usuarioUpload" 
+            [(ngModel)]="material.usuarioUpload" 
+            name="usuarioUpload"
+            placeholder="Nome do usuário">
         </div>
 
         <div class="form-group">
@@ -245,7 +245,7 @@ import { TipoPartitura, CreateMaterialForm, TipoPartituraLabels } from '../../mo
 export class UploadMaterialComponent implements OnInit {
   material: CreateMaterialForm = {
     titulo: '',
-    compositor: '',
+    usuarioUpload: '',
     tipoPartitura: TipoPartitura.CORO,
     arquivoKey: '',
     descricao: '',
@@ -339,7 +339,7 @@ export class UploadMaterialComponent implements OnInit {
   limparFormulario(): void {
     this.material = {
       titulo: '',
-      compositor: '',
+      usuarioUpload: '',
       tipoPartitura: TipoPartitura.CORO,
       arquivoKey: '',
       descricao: '',

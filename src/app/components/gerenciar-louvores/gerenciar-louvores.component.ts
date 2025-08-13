@@ -62,13 +62,13 @@ import { Louvor, Lista, CreateLouvorForm, ApiResponse } from '../../models/colet
           </div>
 
           <div class="form-group">
-            <label for="compositor">Compositor</label>
+            <label for="autor">Autor</label>
             <input 
               type="text" 
-              id="compositor" 
-              [(ngModel)]="formulario.compositor" 
-              name="compositor"
-              placeholder="Nome do compositor">
+              id="autor" 
+              [(ngModel)]="formulario.autor" 
+              name="autor"
+              placeholder="Nome do autor">
           </div>
 
           <div class="form-group">
@@ -147,7 +147,7 @@ import { Louvor, Lista, CreateLouvorForm, ApiResponse } from '../../models/colet
               <div class="louvor-info">
                 <h4>{{ louvor.titulo }}</h4>
                 <p class="lista-nome">📋 {{ getNomeLista(louvor.listaId || '') }}</p>
-                <p class="compositor" *ngIf="louvor.compositor">🎵 {{ louvor.compositor }}</p>
+                <p class="autor" *ngIf="louvor.autor">🎵 {{ louvor.autor }}</p>
                 <p class="ano" *ngIf="louvor.anoComposicao">📅 {{ louvor.anoComposicao }}</p>
               </div>
               <div class="louvor-actions">
@@ -376,7 +376,7 @@ import { Louvor, Lista, CreateLouvorForm, ApiResponse } from '../../models/colet
     }
 
     .louvor-info .lista-nome,
-    .louvor-info .compositor,
+    .louvor-info .autor,
     .louvor-info .ano {
       margin: 0 0 5px 0;
       color: #666;
@@ -590,7 +590,7 @@ export class GerenciarLouvorComponent implements OnInit {
 
   formulario: CreateLouvorForm = {
     titulo: '',
-    compositor: '',
+    autor: '',
     anoComposicao: 0,
     letra: '',
     observacoes: '',
@@ -654,7 +654,7 @@ export class GerenciarLouvorComponent implements OnInit {
       const termo = this.termoBusca.toLowerCase();
       louvoresFiltrados = louvoresFiltrados.filter(louvor =>
         louvor.titulo.toLowerCase().includes(termo) ||
-        (louvor.compositor && louvor.compositor.toLowerCase().includes(termo)) ||
+        (louvor.autor && louvor.autor.toLowerCase().includes(termo)) ||
         (louvor.letra && louvor.letra.toLowerCase().includes(termo)) ||
         (louvor.observacoes && louvor.observacoes.toLowerCase().includes(termo))
       );
@@ -700,7 +700,7 @@ export class GerenciarLouvorComponent implements OnInit {
     this.formulario = {
       listaId: louvor.listaId || '',
       titulo: louvor.titulo,
-      compositor: louvor.compositor || '',
+      autor: louvor.autor || '',
       anoComposicao: louvor.anoComposicao || 0,
       letra: louvor.letra || '',
       observacoes: louvor.observacoes || ''
@@ -731,7 +731,7 @@ export class GerenciarLouvorComponent implements OnInit {
     const info = [
       `Título: ${louvor.titulo}`,
       `Lista: ${this.getNomeLista(louvor.listaId || '')}`,
-      louvor.compositor ? `Compositor: ${louvor.compositor}` : '',
+      louvor.autor ? `Autor: ${louvor.autor}` : '',
       louvor.anoComposicao ? `Ano de Composição: ${louvor.anoComposicao}` : '',
       louvor.letra ? `\nLetra:\n${louvor.letra}` : '',
       louvor.observacoes ? `\nObservações: ${louvor.observacoes}` : '',
@@ -747,7 +747,7 @@ export class GerenciarLouvorComponent implements OnInit {
     this.editandoLouvor = null;
     this.formulario = {
       titulo: '',
-      compositor: '',
+      autor: '',
       anoComposicao: 0,
       letra: '',
       observacoes: '',

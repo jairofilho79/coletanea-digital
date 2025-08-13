@@ -36,7 +36,7 @@ import { Material, TipoPartitura, ApiResponse } from '../../models/coletanea.mod
             id="termoBusca" 
             [(ngModel)]="termoBusca" 
             (input)="aplicarFiltros()" 
-            placeholder="Buscar por título ou compositor...">
+            placeholder="Buscar por título ou usuário...">
         </div>
       </div>
 
@@ -49,7 +49,7 @@ import { Material, TipoPartitura, ApiResponse } from '../../models/coletanea.mod
           </div>
           
           <div class="material-info">
-            <p *ngIf="material.compositor"><strong>Compositor:</strong> {{ material.compositor }}</p>
+            <p *ngIf="material.usuarioUpload"><strong>Usuário:</strong> {{ material.usuarioUpload }}</p>
             <p *ngIf="material.descricao"><strong>Descrição:</strong> {{ material.descricao }}</p>
             <p *ngIf="material.observacoes"><strong>Observações:</strong> {{ material.observacoes }}</p>
           </div>
@@ -261,10 +261,10 @@ export class BibliotecaComponent implements OnInit {
       const passaTipoPartitura = !this.filtroTipoPartitura || 
         material.tipoPartitura === this.filtroTipoPartitura;
 
-      // Filtro por termo de busca (título ou compositor)
+      // Filtro por termo de busca (título ou usuário)
       const passaBusca = !this.termoBusca || 
         material.titulo.toLowerCase().includes(this.termoBusca.toLowerCase()) ||
-        (material.compositor && material.compositor.toLowerCase().includes(this.termoBusca.toLowerCase()));
+        (material.usuarioUpload && material.usuarioUpload.toLowerCase().includes(this.termoBusca.toLowerCase()));
 
       return passaTipoPartitura && passaBusca;
     });

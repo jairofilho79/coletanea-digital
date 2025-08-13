@@ -87,7 +87,7 @@ export class AmplifyService {
       const mockMaterial: Material = {
         id: 'mock-' + Date.now(),
         titulo: material.titulo,
-        compositor: material.compositor,
+        usuarioUpload: material.usuarioUpload,
         tipoPartitura: material.tipoPartitura,
         arquivoKey: material.arquivoKey,
         descricao: material.descricao,
@@ -127,7 +127,7 @@ export class AmplifyService {
       const mockMaterial: Material = {
         id,
         titulo: 'Mock Material',
-        compositor: 'Mock Compositor',
+        usuarioUpload: 'user-123', // Mock user ID
         tipoPartitura: 'coro' as any,
         arquivoKey: 'mock-key.pdf',
         descricao: 'Mock descrição',
@@ -160,7 +160,7 @@ export class AmplifyService {
         {
           id: 'material-1',
           titulo: 'Material 1',
-          compositor: 'Compositor 1',
+          usuarioUpload: 'user-123',
           tipoPartitura: 'coro' as any,
           arquivoKey: 'material1.pdf',
           arranjoId: arranjoId || 'arranjo-1',
@@ -170,7 +170,7 @@ export class AmplifyService {
         {
           id: 'material-2',
           titulo: 'Material 2',
-          compositor: 'Compositor 2',
+          usuarioUpload: 'user-456',
           tipoPartitura: 'cifra' as any,
           arquivoKey: 'material2.pdf',
           arranjoId: arranjoId || 'arranjo-1',
@@ -201,7 +201,7 @@ export class AmplifyService {
       const mockMaterial: Material = {
         id,
         titulo: material.titulo || 'Mock Material Updated',
-        compositor: material.compositor,
+        usuarioUpload: material.usuarioUpload,
         tipoPartitura: material.tipoPartitura || 'coro' as any,
         arquivoKey: material.arquivoKey || 'mock-key-updated.pdf',
         descricao: material.descricao,
@@ -253,6 +253,7 @@ export class AmplifyService {
       const mockArranjo: Arranjo = {
         id: 'mock-arranjo-' + Date.now(),
         nome: arranjo.nome,
+        autor: arranjo.autor,
         tom: arranjo.tom,
         bpm: arranjo.bpm,
         descricao: arranjo.descricao,
@@ -284,6 +285,7 @@ export class AmplifyService {
       const mockArranjo: Arranjo = {
         id,
         nome: 'Mock Arranjo',
+        autor: 'Mock Autor do Arranjo',
         tom: 'C',
         bpm: 120,
         descricao: 'Mock descrição',
@@ -315,6 +317,7 @@ export class AmplifyService {
         {
           id: 'arranjo-1',
           nome: 'Arranjo 1',
+          autor: 'Autor Arranjo 1',
           tom: 'C',
           bpm: 120,
           louvorId: louvorId || 'louvor-1',
@@ -324,6 +327,7 @@ export class AmplifyService {
         {
           id: 'arranjo-2',
           nome: 'Arranjo 2',
+          autor: 'Autor Arranjo 2',
           tom: 'D',
           bpm: 110,
           louvorId: louvorId || 'louvor-1',
@@ -354,6 +358,7 @@ export class AmplifyService {
       const mockArranjo: Arranjo = {
         id,
         nome: arranjo.nome || 'Mock Arranjo Updated',
+        autor: arranjo.autor || 'Mock Autor Updated',
         tom: arranjo.tom,
         bpm: arranjo.bpm,
         descricao: arranjo.descricao,
@@ -406,7 +411,7 @@ export class AmplifyService {
         id: 'mock-louvor-' + Date.now(),
         titulo: louvor.titulo,
         letra: louvor.letra,
-        compositor: louvor.compositor,
+        autor: louvor.autor,
         anoComposicao: louvor.anoComposicao,
         observacoes: louvor.observacoes,
         listaId: louvor.listaId,
@@ -437,7 +442,7 @@ export class AmplifyService {
         id,
         titulo: 'Mock Louvor',
         letra: 'Mock letra do louvor...',
-        compositor: 'Mock Compositor',
+        autor: 'Mock Autor',
         anoComposicao: 2023,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -467,7 +472,7 @@ export class AmplifyService {
           id: 'louvor-1',
           titulo: 'Louvor 1',
           letra: 'Letra do louvor 1...',
-          compositor: 'Compositor 1',
+          autor: 'Autor 1',
           listaId: listaId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -476,7 +481,7 @@ export class AmplifyService {
           id: 'louvor-2',
           titulo: 'Louvor 2',
           letra: 'Letra do louvor 2...',
-          compositor: 'Compositor 2',
+          autor: 'Autor 2',
           listaId: listaId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -506,7 +511,7 @@ export class AmplifyService {
         id,
         titulo: louvor.titulo || 'Mock Louvor Updated',
         letra: louvor.letra,
-        compositor: louvor.compositor,
+        autor: louvor.autor,
         anoComposicao: louvor.anoComposicao,
         observacoes: louvor.observacoes,
         listaId: louvor.listaId,
@@ -779,7 +784,7 @@ export class AmplifyService {
         resultados.push({
           id: 'material-search-1',
           titulo: `Material com "${termo}"`,
-          compositor: 'Compositor Teste',
+          usuarioUpload: 'Usuario Teste',
           tipoPartitura: 'coro' as any,
           arquivoKey: 'material-search.pdf',
           arranjoId: 'arranjo-search',
@@ -793,7 +798,7 @@ export class AmplifyService {
           id: 'louvor-search-1',
           titulo: `Louvor com "${termo}"`,
           letra: 'Letra do louvor encontrado...',
-          compositor: 'Compositor Teste',
+          autor: 'Autor Teste',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as Louvor);
@@ -814,26 +819,26 @@ export class AmplifyService {
     }
   }
 
-  async buscarPorCompositor(compositor: string): Promise<ApiResponse<(Material | Louvor)[]>> {
+  async buscarPorAutor(autor: string): Promise<ApiResponse<(Material | Louvor)[]>> {
     try {
-      console.log('Mock: Buscando por compositor:', compositor);
+      console.log('Mock: Buscando por autor/usuário:', autor);
       
       const resultados: (Material | Louvor)[] = [
         {
-          id: 'material-compositor-1',
-          titulo: 'Material do Compositor',
-          compositor,
+          id: 'material-autor-1',
+          titulo: 'Material do Usuário',
+          usuarioUpload: autor,
           tipoPartitura: 'coro' as any,
-          arquivoKey: 'compositor-material.pdf',
-          arranjoId: 'arranjo-compositor',
+          arquivoKey: 'autor-material.pdf',
+          arranjoId: 'arranjo-autor',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as Material,
         {
-          id: 'louvor-compositor-1',
-          titulo: 'Louvor do Compositor',
+          id: 'louvor-autor-1',
+          titulo: 'Louvor do Autor',
           letra: 'Letra do louvor...',
-          compositor,
+          autor,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as Louvor
@@ -842,14 +847,14 @@ export class AmplifyService {
       return {
         success: true,
         data: resultados,
-        message: `Encontrados ${resultados.length} resultados para compositor "${compositor}" (mock)`
+        message: `Encontrados ${resultados.length} resultados para autor "${autor}" (mock)`
       };
     } catch (error) {
-      console.error('Erro ao buscar por compositor:', error);
+      console.error('Erro ao buscar por autor:', error);
       return {
         success: false,
         error: error as string,
-        message: 'Erro ao buscar por compositor'
+        message: 'Erro ao buscar por autor'
       };
     }
   }

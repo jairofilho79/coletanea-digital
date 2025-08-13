@@ -45,7 +45,7 @@ export enum TipoEntidade {
 export interface Material {
   id: string;
   titulo: string;
-  compositor?: string;
+  usuarioUpload?: string; // ID do usuário que fez o upload
   tipoPartitura: TipoPartitura;
   arquivoKey: string; // S3 key
   descricao?: string;
@@ -58,6 +58,7 @@ export interface Material {
 export interface Arranjo {
   id: string;
   nome: string;
+  autor?: string; // Compositor/autor do arranjo
   tom?: string;
   bpm?: number;
   descricao?: string;
@@ -71,7 +72,7 @@ export interface Louvor {
   id: string;
   titulo: string;
   letra?: string;
-  compositor?: string;
+  autor?: string; // Compositor/autor do louvor
   anoComposicao?: number;
   observacoes?: string;
   listaId?: string;
@@ -103,7 +104,7 @@ export interface HistoricoModificacao {
 
 export interface CreateMaterialForm {
   titulo: string;
-  compositor?: string;
+  usuarioUpload?: string; // ID do usuário que fez o upload
   tipoPartitura: TipoPartitura;
   arquivoKey: string;
   descricao?: string;
@@ -113,6 +114,7 @@ export interface CreateMaterialForm {
 
 export interface CreateArranjoForm {
   nome: string;
+  autor?: string; // Compositor/autor do arranjo
   tom?: string;
   bpm?: number;
   descricao?: string;
@@ -123,7 +125,7 @@ export interface CreateArranjoForm {
 export interface CreateLouvorForm {
   titulo: string;
   letra?: string;
-  compositor?: string;
+  autor?: string; // Compositor/autor do louvor
   anoComposicao?: number;
   observacoes?: string;
   listaId?: string;
