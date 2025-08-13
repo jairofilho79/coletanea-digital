@@ -32,6 +32,7 @@
   display: flex;
   justify-content: center;
   gap: 20px;
+  align-items: center;
 }
 
 .main-nav a {
@@ -41,6 +42,13 @@
   border-radius: 25px;
   transition: all 0.3s ease;
   font-weight: 500;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 0 5px;
 }
 
 .main-nav a:hover {
@@ -80,6 +88,13 @@
   .main-nav {
     flex-direction: column;
     align-items: center;
+    gap: 10px;
+  }
+
+  .nav-divider {
+    width: 100px;
+    height: 1px;
+    margin: 5px 0;
   }
   
   .main-nav a {
