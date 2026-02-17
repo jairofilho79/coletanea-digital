@@ -3,16 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
+import '../../../salas/presentation/providers/sala_providers.dart';
+import '../../../salas/domain/entities/playlist_material.dart';
 import '../providers/praise_providers.dart';
 import '../../domain/entities/praise.dart';
 
 /// Página de detalhes de um praise (mobile-first)
 class PraiseDetailPage extends ConsumerWidget {
   final String praiseId;
+  final String? salaId; // ID da sala se vindo de uma sala
 
   const PraiseDetailPage({
     super.key,
     required this.praiseId,
+    this.salaId,
   });
 
   @override
@@ -24,15 +28,41 @@ class PraiseDetailPage extends ConsumerWidget {
         leading: const BackButtonWithDrawerOnLongPress(),
         title: const Text('Detalhes do Louvor'),
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.playlist_add),
-            tooltip: 'Adicionar à lista',
-            onPressed: () async {
+            tooltip: 'Adicionar',
+            onSelected: (value) async {
               final praise = await ref.read(praiseProvider(praiseId).future);
-              if (context.mounted) {
+              if (!context.mounted) return;
+              
+              if (value == 'lista') {
                 _showAddToListaDialog(context, ref, praise);
+              } else if (value == 'sala') {
+                _showAddToSalaDialog(context, ref, praise);
               }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'lista',
+                child: Row(
+                  children: [
+                    Icon(Icons.list, size: 20),
+                    SizedBox(width: 8),
+                    Text('Adicionar à lista'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'sala',
+                child: Row(
+                  children: [
+                    Icon(Icons.meeting_room, size: 20),
+                    SizedBox(width: 8),
+                    Text('Adicionar à sala'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -96,30 +126,123 @@ class PraiseDetailPage extends ConsumerWidget {
                     itemCount: listas.length,
                     itemBuilder: (context, index) {
                       final lista = listas[index];
-                      final alreadyInList = lista.praises.any((e) => e.praise.id == praise.id);
+                      final existingIndex = lista.praises.indexWhere(
+                        (e) => e.praise.id == praise.id,
+                      );
+                      final alreadyInList = existingIndex != -1;
+                      final position = alreadyInList ? existingIndex + 1 : null;
+                      
                       return ListTile(
                         leading: const Icon(Icons.list),
                         title: Text(lista.name),
                         subtitle: Text(
-                          alreadyInList ? 'Já está nesta lista' : '${lista.praises.length} louvor(es)',
+                          alreadyInList 
+                              ? 'Já está nesta lista (posição $position)'
+                              : '${lista.praises.length} louvor(es)',
                         ),
                         trailing: alreadyInList ? const Icon(Icons.check, color: Colors.green) : null,
-                        onTap: alreadyInList
+                        onTap: () async {
+                          if (alreadyInList) {
+                            // Mostra mensagem informando que já está na lista
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'O louvor "${praise.displayName}" já se encontra na lista "${lista.name}", na posição $position',
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Adiciona o louvor à lista
+                            final repo = ref.read(listaRepositoryProvider);
+                            final current = repo.getListaById(lista.id);
+                            if (current != null) {
+                              final updated = current.addPraise(praise);
+                              await repo.updateLista(updated);
+                              ref.invalidate(listaProvider(lista.id));
+                              ref.invalidate(listasProvider);
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Adicionado à lista "${lista.name}"')),
+                                );
+                              }
+                            }
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Erro ao carregar listas: $e'),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _showAddToSalaDialog(BuildContext context, WidgetRef ref, Praise praise) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Adicionar à sala'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Consumer(
+            builder: (ctx, ref, _) {
+              final salasAsync = ref.watch(salasProvider);
+              return salasAsync.when(
+                data: (salas) {
+                  if (salas.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('Nenhuma sala criada. Crie uma sala em "Salas".'),
+                    );
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: salas.length,
+                    itemBuilder: (context, index) {
+                      final sala = salas[index];
+                      final alreadyInSala = sala.praises.any((e) => e.praise.id == praise.id);
+                      return ListTile(
+                        leading: const Icon(Icons.meeting_room),
+                        title: Text(sala.name),
+                        subtitle: Text(
+                          alreadyInSala ? 'Já está nesta sala' : '${sala.praises.length} louvor(es)',
+                        ),
+                        trailing: alreadyInSala ? const Icon(Icons.check, color: Colors.green) : null,
+                        onTap: alreadyInSala
                             ? null
                             : () async {
-                                final repo = ref.read(listaRepositoryProvider);
-                                final current = repo.getListaById(lista.id);
-                                if (current != null) {
-                                  final updated = current.addPraise(praise);
-                                  await repo.updateLista(updated);
-                                  ref.invalidate(listaProvider(lista.id));
-                                  ref.invalidate(listasProvider);
-                                  if (dialogContext.mounted) {
-                                    Navigator.of(dialogContext).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Adicionado à lista "${lista.name}"')),
-                                    );
-                                  }
+                                final repo = ref.read(salaRepositoryProvider);
+                                await repo.addPraise(sala.id, praise);
+                                ref.invalidate(salaProvider(sala.id));
+                                ref.invalidate(salasProvider);
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Adicionado à sala "${sala.name}"')),
+                                  );
                                 }
                               },
                       );
@@ -134,7 +257,7 @@ class PraiseDetailPage extends ConsumerWidget {
                 ),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Erro ao carregar listas: $e'),
+                  child: Text('Erro ao carregar salas: $e'),
                 ),
               );
             },
@@ -310,11 +433,13 @@ class PraiseDetailPage extends ConsumerWidget {
                         ),
                       ),
                     )
-                  else
+                    else
                     ...praise.materials.map((material) {
                       return _MaterialTile(
                         material: material,
                         praiseName: praise.name,
+                        praiseId: praise.id,
+                        salaId: salaId,
                       );
                     }),
                 ],
@@ -364,13 +489,17 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _MaterialTile extends StatelessWidget {
+class _MaterialTile extends ConsumerWidget {
   final PraiseMaterial material;
   final String praiseName;
+  final String praiseId;
+  final String? salaId;
 
   const _MaterialTile({
     required this.material,
     required this.praiseName,
+    required this.praiseId,
+    this.salaId,
   });
 
   IconData _getMaterialIcon() {
@@ -400,7 +529,7 @@ class _MaterialTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final materialKindName = material.materialKind?.name ?? 'Material';
     final materialTypeName = material.materialType?.name ?? '';
 
@@ -415,7 +544,41 @@ class _MaterialTile extends StatelessWidget {
       title: Text(materialKindName),
       subtitle: Text(materialTypeName),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
+      onTap: () async {
+        // Se há salaId e o material é PDF ou Lyrics, adiciona à playlist
+        if (salaId != null) {
+          final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
+          final isPdf = materialTypeName.contains('pdf');
+          final isLyrics = materialTypeName.contains('text') || 
+                          materialTypeName.contains('lyric') ||
+                          (material.path.length > 100 && 
+                           !material.path.contains('.pdf') && 
+                           !material.path.contains('.mp3'));
+          
+          if (isPdf || isLyrics) {
+            final participanteId = await ref.read(participanteIdProvider.future);
+            final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
+            
+            final materialNaPlaylist = MaterialNaPlaylist(
+              materialId: material.id,
+              praiseId: praiseId,
+              nomeMaterial: material.materialKind?.name ?? 'Material',
+              nomePraise: praiseName,
+              tipoMaterial: isPdf ? 'pdf' : 'lyrics',
+            );
+            
+            await playlistRepo.addMaterial(salaId!, participanteId, materialNaPlaylist);
+            ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: salaId!)));
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Material adicionado à playlist')),
+              );
+            }
+            return;
+          }
+        }
+        
         // Determinar a rota baseada no tipo de material
         final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
         final path = material.path;

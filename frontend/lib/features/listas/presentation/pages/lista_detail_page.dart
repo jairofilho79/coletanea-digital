@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/lista_providers.dart';
 import '../../../praises/domain/entities/praise.dart';
+import '../../domain/entities/lista.dart';
 
 /// Página de detalhes de uma lista (nome, descrição, louvores)
-class ListaDetailPage extends ConsumerWidget {
+class ListaDetailPage extends ConsumerStatefulWidget {
   final String listaId;
 
   const ListaDetailPage({
@@ -15,8 +16,62 @@ class ListaDetailPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final listaAsync = ref.watch(listaProvider(listaId));
+  ConsumerState<ListaDetailPage> createState() => _ListaDetailPageState();
+}
+
+class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  bool _nameDirty = false;
+  bool _descriptionDirty = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveName(Lista? lista) async {
+    if (lista == null || !_nameDirty) return;
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    final updatedLista = Lista(
+      id: lista.id,
+      name: name,
+      description: lista.description,
+      praises: lista.praises,
+      createdAt: lista.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    await ref.read(listaRepositoryProvider).updateLista(updatedLista);
+    _nameDirty = false;
+    ref.invalidate(listaProvider(widget.listaId));
+    ref.invalidate(listasProvider);
+  }
+
+  Future<void> _saveDescription(Lista? lista) async {
+    if (lista == null || !_descriptionDirty) return;
+    final description = _descriptionController.text.trim().isEmpty
+        ? null
+        : _descriptionController.text.trim();
+    final updatedLista = Lista(
+      id: lista.id,
+      name: lista.name,
+      description: description,
+      praises: lista.praises,
+      createdAt: lista.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    await ref.read(listaRepositoryProvider).updateLista(updatedLista);
+    _descriptionDirty = false;
+    ref.invalidate(listaProvider(widget.listaId));
+    ref.invalidate(listasProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listaAsync = ref.watch(listaProvider(widget.listaId));
 
     return Scaffold(
       appBar: AppBar(
@@ -55,124 +110,98 @@ class ListaDetailPage extends ConsumerWidget {
             );
           }
 
+          // Sincroniza os controllers apenas se não houver mudanças pendentes
+          if (!_nameDirty && _nameController.text != lista.name) {
+            _nameController.text = lista.name;
+          }
+          if (!_descriptionDirty && _descriptionController.text != (lista.description ?? '')) {
+            _descriptionController.text = lista.description ?? '';
+          }
+
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.icon(
-                    onPressed: () => context.push('/praises?addToLista=${lista.id}'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar louvor'),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      lista.name,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    if (lista.description != null &&
-                        lista.description!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        lista.description!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[400],
-                            ),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome',
+                        border: OutlineInputBorder(),
                       ),
-                    ],
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.music_note, size: 18, color: Colors.grey[400]),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${lista.praises.length} louvor(es)',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[400],
-                              ),
-                        ),
-                      ],
+                      onChanged: (_) => _nameDirty = true,
+                      onSubmitted: (_) => _saveName(lista),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Descrição',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      onChanged: (_) => _descriptionDirty = true,
+                      onSubmitted: (_) => _saveDescription(lista),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => context.push('/praises?addToLista=${lista.id}'),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Adicionar louvor'),
                     ),
                   ],
                 ),
               ),
-              if (lista.praises.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.music_off, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Nenhum louvor nesta lista',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[400],
-                              ),
+              const Divider(height: 1),
+              Expanded(
+                child: lista.praises.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Nenhum louvor nesta lista.'),
+                            const SizedBox(height: 8),
+                            FilledButton.icon(
+                              onPressed: () => context.push('/praises?addToLista=${lista.id}'),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Adicionar louvor'),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Segure e arraste para reordenar',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[400],
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: ReorderableListView.builder(
-                            buildDefaultDragHandles: false,
-                            proxyDecorator: (child, index, animation) {
-                              return Material(
-                                color: Colors.transparent,
-                                child: child,
-                              );
-                            },
-                            itemCount: lista.praises.length,
-                            onReorder: (oldIndex, newIndex) async {
-                              if (newIndex > lista.praises.length) {
-                                newIndex = lista.praises.length;
-                              }
-                              if (newIndex > oldIndex) newIndex--;
-                              final newLista = lista.reorderPraises(oldIndex, newIndex);
-                              await ref.read(listaRepositoryProvider).updateLista(newLista);
-                              ref.invalidate(listaProvider(listaId));
-                              ref.invalidate(listasProvider);
-                            },
-                            itemBuilder: (context, index) {
-                              final item = lista.praises[index];
-                              return _PraiseListTile(
-                                key: ValueKey(item.praise.id),
-                                index: index,
-                                praise: item.praise,
-                                onTap: () => context.push('/praises/${item.praise.id}'),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                      )
+                    : ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        proxyDecorator: (child, index, animation) {
+                          return Material(
+                            color: Colors.transparent,
+                            child: child,
+                          );
+                        },
+                        itemCount: lista.praises.length,
+                        onReorder: (oldIndex, newIndex) async {
+                          if (newIndex > lista.praises.length) {
+                            newIndex = lista.praises.length;
+                          }
+                          if (newIndex > oldIndex) newIndex--;
+                          final newLista = lista.reorderPraises(oldIndex, newIndex);
+                          await ref.read(listaRepositoryProvider).updateLista(newLista);
+                          ref.invalidate(listaProvider(widget.listaId));
+                          ref.invalidate(listasProvider);
+                        },
+                        itemBuilder: (context, index) {
+                          final item = lista.praises[index];
+                          return _PraiseListTile(
+                            key: ValueKey('${item.praise.id}_${index}_${item.order}'),
+                            index: index,
+                            praise: item.praise,
+                            lista: lista,
+                            onTap: () => context.push('/praises/${item.praise.id}'),
+                          );
+                        },
+                      ),
+              ),
             ],
           );
         },
@@ -198,54 +227,40 @@ class ListaDetailPage extends ConsumerWidget {
   }
 }
 
-class _PraiseListTile extends StatelessWidget {
+class _PraiseListTile extends ConsumerWidget {
   final int index;
   final Praise praise;
+  final Lista lista;
   final VoidCallback? onTap;
 
   const _PraiseListTile({
     super.key,
     required this.index,
     required this.praise,
+    required this.lista,
     this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
       key: key,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            MouseRegion(
-              cursor: SystemMouseCursors.grab,
-              child: ReorderableDragStartListener(
-                index: index,
-                child: Icon(
-                  Icons.drag_handle,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(
-                Icons.music_note,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            ),
-          ],
-        ),
-        title: Text(praise.name),
-        subtitle: praise.number != null
-            ? Text('Nº ${praise.number}')
-            : null,
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
+      leading: ReorderableDragStartListener(
+        index: index,
+        child: const Icon(Icons.drag_handle),
       ),
+      title: Text(praise.displayName),
+      trailing: IconButton(
+        icon: const Icon(Icons.remove_circle_outline),
+        onPressed: () async {
+          final updatedLista = lista.removePraise(praise.id);
+          await ref.read(listaRepositoryProvider).updateLista(updatedLista);
+          ref.invalidate(listaProvider(lista.id));
+          ref.invalidate(listasProvider);
+        },
+        tooltip: 'Remover',
+      ),
+      onTap: onTap,
     );
   }
 }

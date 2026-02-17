@@ -232,4 +232,37 @@ class MaterialCacheService {
   List<String> getCachedMaterialIds() {
     return HiveService.materialsBox.keys.map((key) => key.toString()).toList();
   }
+
+  /// Cacheia conteúdo de texto de um material
+  Future<void> cacheMaterialText(String materialId, String content) async {
+    await HiveService.materialsBox.put('material_text_$materialId', {
+      'content': content,
+      'cached_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Obtém conteúdo de texto de um material do cache
+  String? getCachedMaterialText(String materialId) {
+    final cacheInfo = HiveService.materialsBox.get('material_text_$materialId');
+    if (cacheInfo == null) {
+      return null;
+    }
+
+    try {
+      final data = cacheInfo as Map;
+      return data['content'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Remove conteúdo de texto de um material do cache
+  Future<void> removeMaterialText(String materialId) async {
+    await HiveService.materialsBox.delete('material_text_$materialId');
+  }
+
+  /// Verifica se conteúdo de texto está em cache
+  bool isMaterialTextCached(String materialId) {
+    return HiveService.materialsBox.get('material_text_$materialId') != null;
+  }
 }

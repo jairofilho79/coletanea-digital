@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'hive_service.dart';
 import 'material_cache_service.dart';
+import '../../features/reader/data/services/material_content_service.dart';
 
 /// Provider for metadata box
 final metadataBoxProvider = Provider<Box>((ref) {
@@ -33,7 +34,18 @@ final praisesBoxProvider = Provider<Box>((ref) {
   return HiveService.praisesBox;
 });
 
+/// Provider for playlist materiais box
+final playlistMateriaisBoxProvider = Provider<Box>((ref) {
+  return HiveService.playlistMateriaisBox;
+});
+
 /// Provider for MaterialCacheService
 final materialCacheServiceProvider = Provider<MaterialCacheService>((ref) {
   return MaterialCacheService();
+});
+
+/// Provider for MaterialContentService
+final materialContentServiceProvider = Provider((ref) {
+  final cacheService = ref.read(materialCacheServiceProvider);
+  return MaterialContentService(cacheService: cacheService);
 });

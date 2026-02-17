@@ -3,16 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
+import '../../../salas/presentation/providers/sala_providers.dart';
 import '../providers/praise_providers.dart';
 import '../widgets/praise_card.dart';
 import '../widgets/praise_search_bar.dart';
 
 /// Página de listagem de praises (mobile-first).
 /// Se [addToListaId] for informado, ao tocar num louvor ele é adicionado a essa lista e a tela fecha.
+/// Se [addToSala] for informado, ao tocar num louvor ele é adicionado a essa sala e a tela fecha.
 class PraisesListPage extends ConsumerStatefulWidget {
   final String? addToListaId;
+  final String? addToSala;
 
-  const PraisesListPage({super.key, this.addToListaId});
+  const PraisesListPage({super.key, this.addToListaId, this.addToSala});
 
   @override
   ConsumerState<PraisesListPage> createState() => _PraisesListPageState();
@@ -75,7 +78,7 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: widget.addToListaId != null
+        leading: (widget.addToListaId != null || widget.addToSala != null)
             ? const BackButtonWithDrawerOnLongPress()
             : (RootDrawerScope.maybeOf(context) != null
                 ? IconButton(
@@ -84,7 +87,13 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                     tooltip: 'Menu',
                   )
                 : null),
-        title: Text(widget.addToListaId != null ? 'Adicionar louvor à lista' : 'Coletânea Digital'),
+        title: Text(
+          widget.addToListaId != null
+              ? 'Adicionar louvor à lista'
+              : widget.addToSala != null
+                  ? 'Adicionar louvor à sala'
+                  : 'Coletânea Digital',
+        ),
         actions: [
           if (widget.addToListaId == null)
             IconButton(
@@ -96,7 +105,7 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
       ),
       body: Column(
         children: [
-          if (widget.addToListaId != null)
+          if (widget.addToListaId != null || widget.addToSala != null)
             Material(
               color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
               child: Padding(
@@ -107,7 +116,9 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Toque em um louvor para adicionar à lista',
+                        widget.addToListaId != null
+                            ? 'Toque em um louvor para adicionar à lista'
+                            : 'Toque em um louvor para adicionar à sala',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),
@@ -171,13 +182,42 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                             final repo = ref.read(listaRepositoryProvider);
                             final lista = repo.getListaById(widget.addToListaId!);
                             if (lista != null) {
-                              final newLista = lista.addPraise(praise);
-                              await repo.updateLista(newLista);
-                              ref.invalidate(listaProvider(widget.addToListaId!));
-                              ref.invalidate(listasProvider);
-                              if (context.mounted) {
-                                context.pop();
+                              // Verifica se o louvor já está na lista
+                              final existingIndex = lista.praises.indexWhere(
+                                (item) => item.praise.id == praise.id,
+                              );
+                              
+                              if (existingIndex != -1) {
+                                // Louvor já existe na lista
+                                final position = existingIndex + 1;
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'O louvor "${praise.displayName}" já se encontra na lista, na posição $position',
+                                      ),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                // Adiciona o louvor à lista
+                                final newLista = lista.addPraise(praise);
+                                await repo.updateLista(newLista);
+                                ref.invalidate(listaProvider(widget.addToListaId!));
+                                ref.invalidate(listasProvider);
+                                if (context.mounted) {
+                                  context.pop();
+                                }
                               }
+                            }
+                          } else if (widget.addToSala != null) {
+                            final repo = ref.read(salaRepositoryProvider);
+                            await repo.addPraise(widget.addToSala!, praise);
+                            ref.invalidate(salaProvider(widget.addToSala!));
+                            ref.invalidate(salasProvider);
+                            if (context.mounted) {
+                              context.pop();
                             }
                           } else {
                             context.push('/praises/${praise.id}');

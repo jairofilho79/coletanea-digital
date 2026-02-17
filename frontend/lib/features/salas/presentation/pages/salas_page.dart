@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../widgets/sala_card.dart';
@@ -62,9 +63,7 @@ class SalasPage extends ConsumerWidget {
               final sala = salasList[index];
               return SalaCard(
                 sala: sala,
-                onTap: () {
-                  // TODO: Navegar para detalhes da sala
-                },
+                onTap: () => context.push('/salas/${sala.id}'),
               );
             },
           );
