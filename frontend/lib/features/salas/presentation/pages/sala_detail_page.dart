@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
+import '../../../listas/domain/entities/lista.dart';
 import '../../domain/entities/sala.dart';
 
 /// Página de detalhes de uma sala com tabs (Louvores e Playlist)
@@ -436,7 +437,17 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
   }
 
   Future<void> _showImportListaDialog(BuildContext context, Sala sala) async {
-    final listas = ref.read(listasProvider).value ?? [];
+    // Aguarda o carregamento das listas antes de abrir o dialog
+    final listasAsync = ref.read(listasProvider);
+    List<Lista> listas;
+    
+    if (listasAsync.hasValue) {
+      listas = listasAsync.value ?? [];
+    } else {
+      // Se ainda não carregou, aguarda o carregamento
+      listas = await ref.read(listasProvider.future);
+    }
+    
     if (listas.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -453,28 +464,54 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
           title: const Text('Importar lista'),
           content: SizedBox(
             width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: listas.length,
-              itemBuilder: (context, index) {
-                final lista = listas[index];
-                return ListTile(
-                  leading: const Icon(Icons.list),
-                  title: Text(lista.name),
-                  subtitle: Text('${lista.praises.length} louvor(es)'),
-                  onTap: () async {
-                    await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
-                    ref.invalidate(salaProvider(widget.salaId));
-                    ref.invalidate(salasProvider);
-                    if (ctx.mounted) {
-                      Navigator.of(ctx).pop();
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text('${lista.praises.length} louvor(es) importado(s)'),
-                        ),
+            child: Consumer(
+              builder: (context, ref, _) {
+                // Usa watch dentro do dialog para garantir dados atualizados
+                final listasAsync = ref.watch(listasProvider);
+                return listasAsync.when(
+                  data: (listasData) {
+                    if (listasData.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('Nenhuma lista disponível para importar'),
                       );
                     }
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: listasData.length,
+                      itemBuilder: (context, index) {
+                        final lista = listasData[index];
+                        return ListTile(
+                          leading: const Icon(Icons.list),
+                          title: Text(lista.name),
+                          subtitle: Text('${lista.praises.length} louvor(es)'),
+                          onTap: () async {
+                            await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
+                            ref.invalidate(salaProvider(widget.salaId));
+                            ref.invalidate(salasProvider);
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text('${lista.praises.length} louvor(es) importado(s)'),
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      },
+                    );
                   },
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Erro ao carregar listas: $e'),
+                  ),
                 );
               },
             ),

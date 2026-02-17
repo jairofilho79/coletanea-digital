@@ -135,11 +135,17 @@ class SalaRepository {
       }
     }
     
-    // Limpa a lista de praises e remove o importedFromListaId
-    final updated = sala.copyWith(
+    // Limpa a lista de praises e remove o importedFromListaId.
+    // Não usar copyWith(importedFromListaId: null) porque copyWith trata null como "manter valor".
+    final updated = Sala(
+      id: sala.id,
+      name: sala.name,
+      description: sala.description,
       praises: [],
-      importedFromListaId: null,
+      createdAt: sala.createdAt,
       updatedAt: DateTime.now(),
+      isFavorite: sala.isFavorite,
+      importedFromListaId: null, // explicitamente limpo
     );
     await updateSala(updated);
   }
