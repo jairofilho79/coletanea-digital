@@ -1,0 +1,56 @@
+services:
+  db:
+    profiles: ["dev", "prod"]
+    image: postgres:15-alpine
+    container_name: coletanea_db
+    env_file:
+      - backend/.env.${COMPOSE_PROFILE:-dev}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-coletanea_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coletanea_password}
+      POSTGRES_DB: ${POSTGRES_DB:-coletanea_db}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coletanea_user} -d ${POSTGRES_DB:-coletanea_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coletanea-network
+
+  backend:
+    profiles: ["dev", "prod"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: coletanea_api
+    env_file:
+      - backend/.env.${COMPOSE_PROFILE:-dev}
+    ports:
+      - "${API_PORT:-8001}:8001"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-coletanea_user}:${POSTGRES_PASSWORD:-coletanea_password}@db:5432/${POSTGRES_DB:-coletanea_db}
+      - POSTGRES_USER=${POSTGRES_USER:-coletanea_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-coletanea_password}
+      - POSTGRES_DB=${POSTGRES_DB:-coletanea_db}
+      - ENVIRONMENT=${ENVIRONMENT:-dev}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080,http://localhost}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "sh scripts/wait-for-db.sh db && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+    networks:
+      - coletanea-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  coletanea-network:
+    driver: bridge

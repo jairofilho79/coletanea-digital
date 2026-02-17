@@ -1,0 +1,63 @@
+name: coletanea_digital
+description: "Coletânea Digital - Aplicação mobile-first e offline-first para consumo de louvores e materiais"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^3.2.1
+
+  # Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # PDF Reader
+  pdfrx: ^2.2.24
+
+  # Audio Player
+  just_audio: ^0.9.43
+
+  # Routing
+  go_router: ^17.1.0
+
+  # Network
+  dio: ^5.9.1
+
+  # Internationalization
+  flutter_localizations:
+    sdk: flutter
+
+  # File System
+  path_provider: ^2.1.1
+  
+  # UUID
+  uuid: ^4.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Assets (to be added later)
+  # assets:
+  #   - images/
+
+  # Fonts (to be added later)
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
