@@ -69,13 +69,17 @@ class PlaylistMateriais {
 class MaterialNaPlaylist {
   final String materialId; // ID do material
   final String praiseId; // ID do praise de origem
-  final String nomeMaterial; // Nome do material (cache)
+  final String materialKindId; // ID do material kind (para tradução)
+  final String materialTypeId; // ID do material type (para tradução)
+  final String nomeMaterial; // Nome do material (cache traduzido)
   final String nomePraise; // Nome do praise (cache)
   final String tipoMaterial; // 'pdf' ou 'lyrics'
 
   MaterialNaPlaylist({
     required this.materialId,
     required this.praiseId,
+    required this.materialKindId,
+    required this.materialTypeId,
     required this.nomeMaterial,
     required this.nomePraise,
     required this.tipoMaterial,

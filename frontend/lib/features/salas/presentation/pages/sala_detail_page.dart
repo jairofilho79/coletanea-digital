@@ -6,6 +6,7 @@ import '../providers/sala_providers.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../listas/presentation/widgets/reorderable_praise_list.dart';
 import '../../../listas/domain/entities/lista.dart';
+import '../../../praises/presentation/providers/translation_providers.dart';
 import '../../domain/entities/sala.dart';
 
 /// Página de detalhes de uma sala com tabs (Louvores e Playlist)
@@ -324,6 +325,9 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
 
   Widget _buildPlaylistTab(BuildContext context, Sala sala) {
     final playlistAsync = ref.watch(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
+    // Garante que as traduções foram carregadas (para materiais antigos ou mudanças de idioma)
+    ref.watch(translationsLoadedProvider);
+    final translationService = ref.watch(translationServiceProvider);
 
     return playlistAsync.when(
       data: (materiais) {
@@ -360,9 +364,20 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                     thickness: 1,
                     color: Colors.amber.shade700,
                   ),
-                ListTile(
-                  title: Text(material.displayName),
-                  subtitle: Text('Tipo: ${material.tipoMaterial}'),
+                Builder(
+                  builder: (context) {
+                    // Usa tradução atualizada se materialKindId disponível, senão usa nomeMaterial salvo
+                    final materialName = material.materialKindId.isNotEmpty
+                        ? translationService.getMaterialKindName(
+                            material.materialKindId,
+                            material.nomeMaterial,
+                          )
+                        : material.nomeMaterial;
+                    final displayName = '$materialName - ${material.nomePraise}';
+                    
+                    return ListTile(
+                      title: Text(displayName),
+                      subtitle: Text('Tipo: ${material.tipoMaterial}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: () async {
@@ -390,6 +405,8 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                         );
                       }
                     }
+                  },
+                    );
                   },
                 ),
               ],

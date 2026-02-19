@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../audio/global_audio_player_provider.dart';
 import '../audio/global_audio_state.dart';
 import '../config/app_config.dart';
+import '../../features/praises/presentation/providers/translation_providers.dart';
+import 'language_selector.dart';
 
 /// Permite abrir o drawer da raiz a partir de qualquer página.
 class RootDrawerScope extends InheritedWidget {
@@ -149,6 +151,8 @@ class _AppDrawer extends ConsumerWidget {
                       context.go('/salas');
                     },
                   ),
+                  const Divider(height: 1),
+                  const LanguageSelector(),
                 ],
               ),
             ),
@@ -172,8 +176,17 @@ class _AudioDrawerContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Garante que as traduções foram carregadas
+    ref.watch(translationsLoadedProvider);
+    final translationService = ref.watch(translationServiceProvider);
+    
     final t = state.track!;
     final theme = Theme.of(context);
+    
+    // Usa tradução dinâmica se materialKindId disponível, senão usa materialKindName como fallback
+    final materialKindDisplayName = t.materialKindId != null && t.materialKindId!.isNotEmpty
+        ? translationService.getMaterialKindName(t.materialKindId!, t.materialKindName ?? '')
+        : (t.materialKindName ?? '');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -197,10 +210,9 @@ class _AudioDrawerContent extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    if (t.materialKindName != null &&
-                        t.materialKindName!.isNotEmpty)
+                    if (materialKindDisplayName.isNotEmpty)
                       Text(
-                        t.materialKindName!,
+                        materialKindDisplayName,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

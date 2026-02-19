@@ -51,6 +51,7 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
     required String displayName,
     String? praiseName,
     String? materialKindName,
+    String? materialKindId,
   }) async {
     _disposePlayer();
     state = GlobalAudioState(
@@ -60,6 +61,7 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
         displayName: displayName,
         praiseName: praiseName,
         materialKindName: materialKindName,
+        materialKindId: materialKindId,
       ),
       isLoading: true,
     );
@@ -174,6 +176,7 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
       displayName: t.displayName,
       praiseName: t.praiseName,
       materialKindName: t.materialKindName,
+      materialKindId: t.materialKindId,
     );
   }
 }

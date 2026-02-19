@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/praise_providers.dart';
+import '../providers/translation_providers.dart';
 
 /// Valores aplicados ao fechar o dialog com "Aplicar" ou "Limpar filtros".
 class PraiseFiltersDialogResult {
@@ -142,6 +143,10 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
               const SizedBox(height: 4),
               tagsAsync.when(
                 data: (tags) {
+                  // Garante que as traduções foram carregadas
+                  ref.watch(translationsLoadedProvider);
+                  final translationService = ref.watch(translationServiceProvider);
+                  
                   final tagIds = tags.map((t) => t.id).toSet();
                   final selectedTagId = _tagId != null && tagIds.contains(_tagId) ? _tagId : null;
                   return DropdownButtonFormField<String?>(
@@ -153,7 +158,10 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
                     hint: const Text('Todos'),
                     items: [
                       const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-                      ...tags.map((t) => DropdownMenuItem<String?>(value: t.id, child: Text(t.name))),
+                      ...tags.map((t) {
+                        final translatedName = translationService.getPraiseTagName(t.id, t.name);
+                        return DropdownMenuItem<String?>(value: t.id, child: Text(translatedName));
+                      }),
                     ],
                     onChanged: (value) => setState(() => _tagId = value),
                   );

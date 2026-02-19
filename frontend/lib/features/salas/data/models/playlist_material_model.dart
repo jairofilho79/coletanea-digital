@@ -13,6 +13,8 @@ class PlaylistMateriaisModel {
       'materiais': playlist.materiais.map((m) => {
         'material_id': m.materialId,
         'praise_id': m.praiseId,
+        'material_kind_id': m.materialKindId,
+        'material_type_id': m.materialTypeId,
         'nome_material': m.nomeMaterial,
         'nome_praise': m.nomePraise,
         'tipo_material': m.tipoMaterial,
@@ -25,9 +27,12 @@ class PlaylistMateriaisModel {
     final materiaisJson = json['materiais'] as List<dynamic>? ?? [];
     final materiais = materiaisJson.map((e) {
       final m = e as Map<String, dynamic>;
+      // Compatibilidade com dados antigos que podem não ter os IDs
       return MaterialNaPlaylist(
         materialId: m['material_id'] as String,
         praiseId: m['praise_id'] as String,
+        materialKindId: m['material_kind_id'] as String? ?? '',
+        materialTypeId: m['material_type_id'] as String? ?? '',
         nomeMaterial: m['nome_material'] as String,
         nomePraise: m['nome_praise'] as String,
         tipoMaterial: m['tipo_material'] as String,

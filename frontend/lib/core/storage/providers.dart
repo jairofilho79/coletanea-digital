@@ -39,6 +39,11 @@ final playlistMateriaisBoxProvider = Provider<Box>((ref) {
   return HiveService.playlistMateriaisBox;
 });
 
+/// Provider for translations box
+final translationsBoxProvider = Provider<Box>((ref) {
+  return HiveService.translationsBox;
+});
+
 /// Provider for MaterialCacheService
 final materialCacheServiceProvider = Provider<MaterialCacheService>((ref) {
   return MaterialCacheService();

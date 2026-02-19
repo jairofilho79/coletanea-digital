@@ -9,6 +9,7 @@ import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
 import '../../../salas/domain/entities/playlist_material.dart';
 import '../providers/praise_providers.dart';
+import '../providers/translation_providers.dart';
 import '../../domain/entities/praise.dart';
 
 /// Página de detalhes de um praise (mobile-first)
@@ -390,8 +391,16 @@ class PraiseDetailPage extends ConsumerWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: praise.tags.map((tag) {
-                        return Chip(
-                          label: Text(tag.name),
+                        return Consumer(
+                          builder: (context, ref, _) {
+                            // Garante que as traduções foram carregadas
+                            ref.watch(translationsLoadedProvider);
+                            final translationService = ref.watch(translationServiceProvider);
+                            final translatedName = translationService.getPraiseTagName(tag.id, tag.name);
+                            return Chip(
+                              label: Text(translatedName),
+                            );
+                          },
                         );
                       }).toList(),
                     ),
@@ -542,8 +551,18 @@ class _MaterialTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final materialKindName = material.materialKind?.name ?? 'Material';
-    final materialTypeName = material.materialType?.name ?? '';
+    // Garante que as traduções foram carregadas
+    ref.watch(translationsLoadedProvider);
+    final translationService = ref.watch(translationServiceProvider);
+    
+    final materialKindName = translationService.getMaterialKindName(
+      material.materialKindId,
+      material.materialKind?.name ?? 'Material',
+    );
+    final materialTypeName = translationService.getMaterialTypeName(
+      material.materialTypeId,
+      material.materialType?.name ?? '',
+    );
 
     return ListTile(
       leading: CircleAvatar(
@@ -596,10 +615,18 @@ class _MaterialTile extends ConsumerWidget {
             final participanteId = await ref.read(participanteIdProvider.future);
             final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
             
+            final translationService = ref.read(translationServiceProvider);
+            final translatedMaterialKindName = translationService.getMaterialKindName(
+              material.materialKindId,
+              material.materialKind?.name ?? 'Material',
+            );
+            
             final materialNaPlaylist = MaterialNaPlaylist(
               materialId: material.id,
               praiseId: praiseId,
-              nomeMaterial: material.materialKind?.name ?? 'Material',
+              materialKindId: material.materialKindId,
+              materialTypeId: material.materialTypeId,
+              nomeMaterial: translatedMaterialKindName,
               nomePraise: praiseName,
               tipoMaterial: isPdf ? 'pdf' : 'lyrics',
             );
@@ -652,10 +679,11 @@ class _MaterialTile extends ConsumerWidget {
           route = '/reader/lyrics/${material.id}';
         }
 
-        // Incluir praiseName e materialKindName para o drawer do player de áudio
+        // Incluir praiseName, materialKindName e materialKindId para o drawer do player de áudio
         if (route.contains('/reader/audio/')) {
           queryParams['praiseName'] = praiseName;
           queryParams['materialKindName'] = materialKindName;
+          queryParams['materialKindId'] = material.materialKindId;
         }
         final uri = Uri(
           path: route,

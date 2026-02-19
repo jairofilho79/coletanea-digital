@@ -100,12 +100,14 @@ final appRouter = GoRouter(
             final materialName = state.uri.queryParameters['name'];
             final praiseName = state.uri.queryParameters['praiseName'];
             final materialKindName = state.uri.queryParameters['materialKindName'];
+            final materialKindId = state.uri.queryParameters['materialKindId'];
             return AudioReaderPage(
               materialId: materialId,
               materialPath: materialPath,
               materialName: materialName,
               praiseName: praiseName,
               materialKindName: materialKindName,
+              materialKindId: materialKindId,
             );
           },
         ),

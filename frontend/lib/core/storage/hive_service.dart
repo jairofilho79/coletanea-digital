@@ -9,6 +9,7 @@ class HiveService {
   static const String _settingsBoxName = 'settings';
   static const String _praisesBoxName = 'praises';
   static const String _playlistMateriaisBoxName = 'playlist_materiais';
+  static const String _translationsBoxName = 'translations';
 
   /// Initialize all Hive boxes
   static Future<void> init() async {
@@ -25,6 +26,7 @@ class HiveService {
     await Hive.openBox(_settingsBoxName);
     await Hive.openBox(_praisesBoxName);
     await Hive.openBox(_playlistMateriaisBoxName);
+    await Hive.openBox(_translationsBoxName);
   }
 
   /// Get metadata box
@@ -48,6 +50,9 @@ class HiveService {
   /// Get playlist materiais box
   static Box get playlistMateriaisBox => Hive.box(_playlistMateriaisBoxName);
 
+  /// Get translations box
+  static Box get translationsBox => Hive.box(_translationsBoxName);
+
   /// Clear all cache
   static Future<void> clearAll() async {
     await metadataBox.clear();
@@ -56,6 +61,7 @@ class HiveService {
     await roomsBox.clear();
     await praisesBox.clear();
     await playlistMateriaisBox.clear();
+    await translationsBox.clear();
     // Don't clear settings box
   }
 

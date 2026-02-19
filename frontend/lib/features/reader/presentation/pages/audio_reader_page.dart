@@ -13,6 +13,7 @@ class AudioReaderPage extends ConsumerStatefulWidget {
   final String? materialName;
   final String? praiseName;
   final String? materialKindName;
+  final String? materialKindId;
 
   const AudioReaderPage({
     super.key,
@@ -21,6 +22,7 @@ class AudioReaderPage extends ConsumerStatefulWidget {
     this.materialName,
     this.praiseName,
     this.materialKindName,
+    this.materialKindId,
   });
 
   @override
@@ -44,6 +46,7 @@ class _AudioReaderPageState extends ConsumerState<AudioReaderPage> {
             displayName: displayName,
             praiseName: widget.praiseName,
             materialKindName: widget.materialKindName,
+            materialKindId: widget.materialKindId,
           );
     }
   }

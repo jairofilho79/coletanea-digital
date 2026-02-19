@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/praise.dart';
+import '../providers/translation_providers.dart';
 
 /// Card mobile-first para exibir um praise
-class PraiseCard extends StatelessWidget {
+class PraiseCard extends ConsumerWidget {
   final Praise praise;
   final VoidCallback? onTap;
 
@@ -13,7 +15,7 @@ class PraiseCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
@@ -99,15 +101,21 @@ class PraiseCard extends StatelessWidget {
                     spacing: 4,
                     runSpacing: 4,
                     children: praise.tags.take(3).map((tag) {
-                      return Chip(
+                      // Garante que as traduções foram carregadas
+                      ref.watch(translationsLoadedProvider);
+                      final translationService = ref.watch(translationServiceProvider);
+                      final translatedName = translationService.getPraiseTagName(tag.id, tag.name);
+                      return Builder(
+                        builder: (context) => Chip(
                         label: Text(
-                          tag.name,
+                          translatedName,
                           style: const TextStyle(fontSize: 11),
                         ),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize:
                             MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                        ),
                       );
                     }).toList(),
                   ),
