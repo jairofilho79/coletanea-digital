@@ -59,7 +59,8 @@ class PraiseCard extends StatelessWidget {
               // Informações adicionais
               if (praise.author != null ||
                   praise.rhythm != null ||
-                  praise.tonality != null)
+                  praise.tonality != null ||
+                  praise.category != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Wrap(
@@ -80,6 +81,11 @@ class PraiseCard extends StatelessWidget {
                         _InfoChip(
                           icon: Icons.tune,
                           label: praise.tonality!,
+                        ),
+                      if (praise.category != null)
+                        _InfoChip(
+                          icon: Icons.category,
+                          label: praise.category!,
                         ),
                     ],
                   ),

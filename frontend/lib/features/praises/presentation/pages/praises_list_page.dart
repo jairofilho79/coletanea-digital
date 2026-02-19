@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/youtube_utils.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
 import '../providers/praise_providers.dart';
 import '../widgets/praise_card.dart';
+import '../widgets/praise_filters_dialog.dart';
 import '../widgets/praise_search_bar.dart';
 
 /// Página de listagem de praises (mobile-first).
@@ -23,58 +25,93 @@ class PraisesListPage extends ConsumerStatefulWidget {
 
 class _PraisesListPageState extends ConsumerState<PraisesListPage> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String? _searchQuery;
   String? _selectedTagId;
-  int _currentPage = 0;
-  final int _pageSize = 20;
+  String? _selectedTonality;
+  String? _selectedRhythm;
+  String? _selectedCategory;
+  bool _searchInLyrics = false;
+  /// 'name' ou 'number' (por número = sem número por último)
+  String _sortBy = 'name';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _onSearch(String query) {
     setState(() {
       _searchQuery = query.isEmpty ? null : query;
-      _currentPage = 0;
     });
   }
 
-  void _onTagFilter(String? tagId) {
-    setState(() {
-      _selectedTagId = tagId;
-      _currentPage = 0;
-    });
+  void _openFiltersDialog() {
+    PraiseFiltersDialog.show(
+      context,
+      initialTagId: _selectedTagId,
+      initialTonality: _selectedTonality,
+      initialRhythm: _selectedRhythm,
+      initialCategory: _selectedCategory,
+      initialSortBy: _sortBy,
+      initialSearchInLyrics: _searchInLyrics,
+      onApply: (result) {
+        setState(() {
+          _selectedTagId = result.tagId;
+          _selectedTonality = result.tonality;
+          _selectedRhythm = result.rhythm;
+          _selectedCategory = result.category;
+          _sortBy = result.sortBy;
+          _searchInLyrics = result.searchInLyrics;
+        });
+      },
+    );
   }
 
   void _refresh() {
-    setState(() {
-      _currentPage = 0;
-    });
-    // Força refresh do provider
-    final params = PraiseListParams(
-      skip: 0,
-      limit: _pageSize,
-      name: _searchQuery,
+    final youtubeId = _searchQuery != null ? extractYoutubeVideoId(_searchQuery!) : null;
+    // Se for link/ID do YouTube, filtrar só por youtube_url; senão filtrar por name (evita buscar nome contendo URL)
+    final filters = PraiseListFilters(
+      name: youtubeId != null ? null : _searchQuery,
       tagId: _selectedTagId,
-      forceRefresh: true,
+      tonality: _selectedTonality,
+      rhythm: _selectedRhythm,
+      category: _selectedCategory,
+      youtubeUrl: youtubeId != null ? _searchQuery : null,
+      searchInLyrics: _searchInLyrics,
+      sortBy: _sortBy,
+      noNumber: _sortBy == 'number' ? 'last' : 'last',
     );
-    ref.invalidate(praisesProvider(params));
+    ref.read(praisesInfiniteProvider(filters).notifier).loadInitial(forceRefresh: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final params = PraiseListParams(
-      skip: _currentPage * _pageSize,
-      limit: _pageSize,
-      name: _searchQuery,
+    final youtubeId = _searchQuery != null ? extractYoutubeVideoId(_searchQuery!) : null;
+    // Se for link/ID do YouTube, filtrar só por youtube_url; senão filtrar por name
+    final filters = PraiseListFilters(
+      name: youtubeId != null ? null : _searchQuery,
       tagId: _selectedTagId,
+      tonality: _selectedTonality,
+      rhythm: _selectedRhythm,
+      category: _selectedCategory,
+      youtubeUrl: youtubeId != null ? _searchQuery : null,
+      searchInLyrics: _searchInLyrics,
+      sortBy: _sortBy,
+      noNumber: _sortBy == 'number' ? 'last' : 'last',
     );
-
-    // Usa ref.read em vez de ref.watch para evitar rebuilds infinitos
-    // e só atualiza quando necessário (via refresh)
-    final praisesAsync = ref.watch(praisesProvider(params));
+    final infiniteState = ref.watch(praisesInfiniteProvider(filters));
+    final notifier = ref.read(praisesInfiniteProvider(filters).notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,17 +165,17 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                 ),
               ),
             ),
-          // Barra de busca
+          // Barra de busca (filtros avançados no botão à direita)
           PraiseSearchBar(
             controller: _searchController,
             onSearch: _onSearch,
-            onTagFilter: _onTagFilter,
-            selectedTagId: _selectedTagId,
+            focusNode: _searchFocusNode,
+            onAdvancedTap: _openFiltersDialog,
           ),
 
           // Lista de praises
           Expanded(
-            child: praisesAsync.when(
+            child: infiniteState.items.when(
               data: (praises) {
                 if (praises.isEmpty) {
                   return Center(
@@ -152,7 +189,11 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _searchQuery != null || _selectedTagId != null
+                          _searchQuery != null ||
+                                  _selectedTagId != null ||
+                                  _selectedTonality != null ||
+                                  _selectedRhythm != null ||
+                                  _selectedCategory != null
                               ? 'Nenhum louvor encontrado'
                               : 'Nenhum louvor disponível',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -164,16 +205,42 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                   );
                 }
 
+                final itemCount = praises.length + 1;
                 return RefreshIndicator(
-                  onRefresh: () async {
-                    final refreshParams = params.copyWith(forceRefresh: true);
-                    ref.invalidate(praisesProvider(refreshParams));
-                    await ref.read(praisesProvider(refreshParams).future);
-                  },
+                  onRefresh: () => notifier.loadInitial(forceRefresh: true),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(8),
-                    itemCount: praises.length,
+                    itemCount: itemCount,
                     itemBuilder: (context, index) {
+                      if (index == praises.length) {
+                        if (infiniteState.isLoadingMore) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        if (infiniteState.hasMore) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: OutlinedButton.icon(
+                                onPressed: () => ref
+                                    .read(praisesInfiniteProvider(filters).notifier)
+                                    .loadMore(),
+                                icon: const Icon(Icons.add_circle_outline, size: 20),
+                                label: const Text('Carregar mais'),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }
                       final praise = praises[index];
                       return PraiseCard(
                         praise: praise,
@@ -182,13 +249,10 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                             final repo = ref.read(listaRepositoryProvider);
                             final lista = repo.getListaById(widget.addToListaId!);
                             if (lista != null) {
-                              // Verifica se o louvor já está na lista
                               final existingIndex = lista.praises.indexWhere(
                                 (item) => item.praise.id == praise.id,
                               );
-                              
                               if (existingIndex != -1) {
-                                // Louvor já existe na lista
                                 final position = existingIndex + 1;
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -201,7 +265,6 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                                   );
                                 }
                               } else {
-                                // Adiciona o louvor à lista
                                 final newLista = lista.addPraise(praise);
                                 await repo.updateLista(newLista);
                                 ref.invalidate(listaProvider(widget.addToListaId!));

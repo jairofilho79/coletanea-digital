@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/utils/youtube_utils.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
@@ -502,10 +505,17 @@ class _MaterialTile extends ConsumerWidget {
     this.salaId,
   });
 
+  bool _isYoutube() {
+    final name = material.materialType?.name.toLowerCase() ?? '';
+    return name.contains('youtube');
+  }
+
   IconData _getMaterialIcon() {
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
     if (materialTypeName.contains('pdf')) {
       return Icons.picture_as_pdf;
+    } else if (materialTypeName.contains('youtube')) {
+      return Icons.play_circle_fill; // fallback se FaIcon não for usado
     } else if (materialTypeName.contains('audio')) {
       return Icons.audiotrack;
     } else if (materialTypeName.contains('text') ||
@@ -518,6 +528,8 @@ class _MaterialTile extends ConsumerWidget {
   Color _getMaterialColor(BuildContext context) {
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
     if (materialTypeName.contains('pdf')) {
+      return Colors.red;
+    } else if (materialTypeName.contains('youtube')) {
       return Colors.red;
     } else if (materialTypeName.contains('audio')) {
       return Colors.blue;
@@ -536,15 +548,40 @@ class _MaterialTile extends ConsumerWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: _getMaterialColor(context).withValues(alpha: 0.1),
-        child: Icon(
-          _getMaterialIcon(),
-          color: _getMaterialColor(context),
-        ),
+        child: _isYoutube()
+            ? const FaIcon(
+                FontAwesomeIcons.youtube,
+                color: Colors.red,
+                size: 28,
+              )
+            : Icon(
+                _getMaterialIcon(),
+                color: _getMaterialColor(context),
+              ),
       ),
       title: Text(materialKindName),
       subtitle: Text(materialTypeName),
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
+        final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
+        // YouTube: abrir no app (se instalado) ou no navegador
+        if (materialTypeName.contains('youtube')) {
+          final path = material.path.trim();
+          final videoId = extractYoutubeVideoId(path);
+          final url = videoId != null
+              ? 'https://www.youtube.com/watch?v=$videoId'
+              : (path.startsWith('http') ? path : 'https://www.youtube.com/watch?v=$path');
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Não foi possível abrir: $url')),
+            );
+          }
+          return;
+        }
+
         // Se há salaId e o material é PDF ou Lyrics, adiciona à playlist
         if (salaId != null) {
           final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
@@ -580,7 +617,6 @@ class _MaterialTile extends ConsumerWidget {
         }
         
         // Determinar a rota baseada no tipo de material
-        final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
         final path = material.path;
         
         // Verifica se o path parece ser texto (lyrics) em vez de arquivo

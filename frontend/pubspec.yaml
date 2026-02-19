@@ -43,6 +43,12 @@ dependencies:
   # UUID
   uuid: ^4.3.3
 
+  # Launch URLs (YouTube, etc.)
+  url_launcher: ^6.3.1
+
+  # Ícone do YouTube (brand)
+  font_awesome_flutter: ^10.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,0 +1,60 @@
+# Docker Compose para desenvolvimento
+# Ambiente dev do coletanea-digital - conecta-se ao coldigom-dev via rede compartilhada
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: coletanea_db_dev
+    env_file:
+      - backend/.env.dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-coletanea_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coletanea_password}
+      POSTGRES_DB: ${POSTGRES_DB:-coletanea_db}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coletanea_user} -d ${POSTGRES_DB:-coletanea_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coldigom-coletanea-dev-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=dev
+    container_name: coletanea_api_dev
+    env_file:
+      - backend/.env.dev
+    ports:
+      - "${API_PORT:-8001}:8001"
+    environment:
+      - ENVIRONMENT=dev
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-coletanea_user}:${POSTGRES_PASSWORD:-coletanea_password}@db:5432/${POSTGRES_DB:-coletanea_db}
+      - POSTGRES_USER=${POSTGRES_USER:-coletanea_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-coletanea_password}
+      - POSTGRES_DB=${POSTGRES_DB:-coletanea_db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:3000}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh scripts/wait-for-db.sh db "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+    networks:
+      - coldigom-coletanea-dev-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  coldigom-coletanea-dev-network:
+    external: true

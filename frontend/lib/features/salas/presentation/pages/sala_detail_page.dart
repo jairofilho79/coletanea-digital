@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
+import '../../../listas/presentation/widgets/reorderable_praise_list.dart';
 import '../../../listas/domain/entities/lista.dart';
 import '../../domain/entities/sala.dart';
 
@@ -294,63 +295,28 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
         ),
         const Divider(height: 1),
         Expanded(
-          child: sala.praises.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Nenhum louvor na sala.'),
-                      const SizedBox(height: 8),
-                      FilledButton.icon(
-                        onPressed: () => context.push('/praises?addToSala=${sala.id}'),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Adicionar louvores'),
-                      ),
-                    ],
-                  ),
-                )
-              : ReorderableListView.builder(
-                  itemCount: sala.praises.length,
-                  buildDefaultDragHandles: false, // Desabilita o indicador padrão de drag
-                  onReorder: (oldIndex, newIndex) async {
-                    if (newIndex > oldIndex) newIndex--;
-                    await ref.read(salaRepositoryProvider).reorderPraises(
-                          sala.id,
-                          oldIndex,
-                          newIndex,
-                        );
-                    ref.invalidate(salaProvider(widget.salaId));
-                    ref.invalidate(salasProvider);
-                  },
-                  itemBuilder: (context, index) {
-                    final item = sala.praises[index];
-                    return ListTile(
-                      key: ValueKey('${item.praise.id}_${index}_${item.order}'),
-                      leading: ReorderableDragStartListener(
-                        index: index,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: const Icon(Icons.drag_handle),
-                        ),
-                      ),
-                      title: Text(item.praise.displayName),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline),
-                        onPressed: () async {
-                          await ref.read(salaRepositoryProvider).removePraise(
-                                sala.id,
-                                item.praise.id,
-                              );
-                          ref.invalidate(salaProvider(widget.salaId));
-                          ref.invalidate(salasProvider);
-                          ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
-                        },
-                        tooltip: 'Remover',
-                      ),
-                      onTap: () => context.push('/praises/${item.praise.id}?salaId=${sala.id}'),
-                    );
-                  },
-                ),
+          child: ReorderablePraiseList(
+            items: sala.praises,
+            emptyMessage: 'Nenhum louvor na sala.',
+            emptyActionLabel: 'Adicionar louvores',
+            onEmptyActionPressed: () => context.push('/praises?addToSala=${sala.id}'),
+            onReorder: (oldIndex, newIndex) async {
+              await ref.read(salaRepositoryProvider).reorderPraises(
+                    sala.id,
+                    oldIndex,
+                    newIndex,
+                  );
+              ref.invalidate(salaProvider(widget.salaId));
+              ref.invalidate(salasProvider);
+            },
+            onRemove: (praiseId) async {
+              await ref.read(salaRepositoryProvider).removePraise(sala.id, praiseId);
+              ref.invalidate(salaProvider(widget.salaId));
+              ref.invalidate(salasProvider);
+              ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
+            },
+            onTap: (praise) => context.push('/praises/${praise.id}?salaId=${sala.id}'),
+          ),
         ),
       ],
     );
@@ -619,8 +585,10 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
             onPressed: () async {
               Navigator.of(ctx).pop();
               try {
+                final listaId = sala.importedFromListaId!;
                 await ref.read(salaRepositoryProvider).overwriteImportedLista(sala.id);
                 ref.invalidate(listasProvider);
+                ref.invalidate(listaProvider(listaId));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

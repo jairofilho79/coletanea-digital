@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/lista_providers.dart';
-import '../../../praises/domain/entities/praise.dart';
+import '../widgets/reorderable_praise_list.dart';
 import '../../domain/entities/lista.dart';
 
 /// Página de detalhes de uma lista (nome, descrição, louvores)
@@ -156,51 +156,25 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
               ),
               const Divider(height: 1),
               Expanded(
-                child: lista.praises.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Nenhum louvor nesta lista.'),
-                            const SizedBox(height: 8),
-                            FilledButton.icon(
-                              onPressed: () => context.push('/praises?addToLista=${lista.id}'),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Adicionar louvor'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ReorderableListView.builder(
-                        buildDefaultDragHandles: false,
-                        proxyDecorator: (child, index, animation) {
-                          return Material(
-                            color: Colors.transparent,
-                            child: child,
-                          );
-                        },
-                        itemCount: lista.praises.length,
-                        onReorder: (oldIndex, newIndex) async {
-                          if (newIndex > lista.praises.length) {
-                            newIndex = lista.praises.length;
-                          }
-                          if (newIndex > oldIndex) newIndex--;
-                          final newLista = lista.reorderPraises(oldIndex, newIndex);
-                          await ref.read(listaRepositoryProvider).updateLista(newLista);
-                          ref.invalidate(listaProvider(widget.listaId));
-                          ref.invalidate(listasProvider);
-                        },
-                        itemBuilder: (context, index) {
-                          final item = lista.praises[index];
-                          return _PraiseListTile(
-                            key: ValueKey('${item.praise.id}_${index}_${item.order}'),
-                            index: index,
-                            praise: item.praise,
-                            lista: lista,
-                            onTap: () => context.push('/praises/${item.praise.id}'),
-                          );
-                        },
-                      ),
+                child: ReorderablePraiseList(
+                  items: lista.praises,
+                  emptyMessage: 'Nenhum louvor nesta lista.',
+                  emptyActionLabel: 'Adicionar louvor',
+                  onEmptyActionPressed: () => context.push('/praises?addToLista=${lista.id}'),
+                  onReorder: (oldIndex, newIndex) async {
+                    final newLista = lista.reorderPraises(oldIndex, newIndex);
+                    await ref.read(listaRepositoryProvider).updateLista(newLista);
+                    ref.invalidate(listaProvider(widget.listaId));
+                    ref.invalidate(listasProvider);
+                  },
+                  onRemove: (praiseId) async {
+                    final updatedLista = lista.removePraise(praiseId);
+                    await ref.read(listaRepositoryProvider).updateLista(updatedLista);
+                    ref.invalidate(listaProvider(widget.listaId));
+                    ref.invalidate(listasProvider);
+                  },
+                  onTap: (praise) => context.push('/praises/${praise.id}'),
+                ),
               ),
             ],
           );
@@ -223,44 +197,6 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PraiseListTile extends ConsumerWidget {
-  final int index;
-  final Praise praise;
-  final Lista lista;
-  final VoidCallback? onTap;
-
-  const _PraiseListTile({
-    super.key,
-    required this.index,
-    required this.praise,
-    required this.lista,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      key: key,
-      leading: ReorderableDragStartListener(
-        index: index,
-        child: const Icon(Icons.drag_handle),
-      ),
-      title: Text(praise.displayName),
-      trailing: IconButton(
-        icon: const Icon(Icons.remove_circle_outline),
-        onPressed: () async {
-          final updatedLista = lista.removePraise(praise.id);
-          await ref.read(listaRepositoryProvider).updateLista(updatedLista);
-          ref.invalidate(listaProvider(lista.id));
-          ref.invalidate(listasProvider);
-        },
-        tooltip: 'Remover',
-      ),
-      onTap: onTap,
     );
   }
 }
