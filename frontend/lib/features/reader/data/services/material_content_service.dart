@@ -26,7 +26,12 @@ class MaterialContentService {
   }
 
   /// Busca conteúdo do material do cache ou API
-  Future<String> getMaterialContent(String materialId, String materialPath) async {
+  Future<String> getMaterialContent(
+    String materialId,
+    String materialPath, {
+    String? materialKindId,
+    String? materialKindName,
+  }) async {
     // 1. Verificar cache primeiro
     final cachedContent = _cacheService.getCachedMaterialText(materialId);
     if (cachedContent != null) {
@@ -35,7 +40,12 @@ class MaterialContentService {
 
     // 2. Se o path parece ser texto direto, usar diretamente
     if (_isDirectText(materialPath)) {
-      await _cacheService.cacheMaterialText(materialId, materialPath);
+      await _cacheService.cacheMaterialText(
+        materialId,
+        materialPath,
+        materialKindId: materialKindId,
+        materialKindName: materialKindName,
+      );
       return materialPath;
     }
 
@@ -56,9 +66,13 @@ class MaterialContentService {
         final materialData = response.data as Map<String, dynamic>;
         final content = materialData['path'] as String? ?? '';
 
-        // Cachear conteúdo
         if (content.isNotEmpty) {
-          await _cacheService.cacheMaterialText(materialId, content);
+          await _cacheService.cacheMaterialText(
+            materialId,
+            content,
+            materialKindId: materialKindId,
+            materialKindName: materialKindName,
+          );
         }
 
         return content;
@@ -66,9 +80,13 @@ class MaterialContentService {
         throw Exception('Resposta inválida da API: ${response.statusCode}');
       }
     } catch (e) {
-      // Se falhar, tentar usar materialPath como fallback
       if (materialPath.isNotEmpty) {
-        await _cacheService.cacheMaterialText(materialId, materialPath);
+        await _cacheService.cacheMaterialText(
+          materialId,
+          materialPath,
+          materialKindId: materialKindId,
+          materialKindName: materialKindName,
+        );
         return materialPath;
       }
       rethrow;

@@ -34,7 +34,7 @@ class ColetaneaDigitalApp extends StatelessWidget {
       title: 'Coletânea Digital',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark, // Usar tema escuro por padrão (background marrom avermelhado)
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
     );

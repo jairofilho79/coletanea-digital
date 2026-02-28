@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/youtube_utils.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
 import '../providers/praise_providers.dart';
@@ -124,13 +126,11 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                     tooltip: 'Menu',
                   )
                 : null),
-        title: Text(
-          widget.addToListaId != null
-              ? 'Adicionar louvor à lista'
-              : widget.addToSala != null
-                  ? 'Adicionar louvor à sala'
-                  : 'Coletânea Digital',
-        ),
+        title: widget.addToListaId != null
+            ? AppBarTitleWithLogo.text('Adicionar louvor à lista')
+            : widget.addToSala != null
+                ? AppBarTitleWithLogo.text('Adicionar louvor à sala')
+                : const AppLogo(),
         actions: [
           if (widget.addToListaId == null)
             IconButton(

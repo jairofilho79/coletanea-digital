@@ -109,12 +109,21 @@ class PraiseCard extends ConsumerWidget {
                         builder: (context) => Chip(
                         label: Text(
                           translatedName,
-                          style: const TextStyle(fontSize: 11),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).textTheme.bodyMedium?.color, // Mesmo cinza escuro das propriedades
+                            fontWeight: FontWeight.w600, // Mais grosso
+                          ),
                         ),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize:
                             MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                        backgroundColor: Theme.of(context).cardColor,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2, // Borda mais grossa
+                        ),
                         ),
                       );
                     }).toList(),
@@ -130,14 +139,12 @@ class PraiseCard extends ConsumerWidget {
                       Icon(
                         Icons.description,
                         size: 16,
-                        color: Colors.grey[400],
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${praise.materials.length} material(is)',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[400],
-                            ),
+                        '${praise.materials.length} ${praise.materials.length < 2 ? 'material' : 'materiais'}',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
@@ -161,17 +168,18 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey[400]),
+        Icon(icon, size: 14, color: textColor),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[400],
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600, // Mais grosso
                 ),
           ),
         ),

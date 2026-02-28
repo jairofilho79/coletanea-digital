@@ -32,6 +32,7 @@ dependencies:
 
   # Network
   dio: ^5.9.1
+  connectivity_plus: ^6.1.1
 
   # Internationalization
   flutter_localizations:
@@ -48,6 +49,12 @@ dependencies:
 
   # Ícone do YouTube (brand)
   font_awesome_flutter: ^10.7.0
+  
+  # Google Fonts
+  google_fonts: ^6.2.1
+  
+  # SVG Support
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -58,12 +65,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets (to be added later)
-  # assets:
-  #   - images/
-
-  # Fonts (to be added later)
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
+  assets:
+    - assets/logo/LOGO_BRANCO.svg
+    - assets/logo/LOGO_COLORIDO.svg
+    - assets/logo/LOGO_COLORIDO_INLINE_GOLD_LIGHT.svg
+    - assets/logo/LOGO_PRETO.svg
+    - assets/logo/LOGO_ONLY_GOLD_DARK.svg

@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/utils/youtube_utils.dart';
 import '../../../../core/widgets/app_shell.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
 import '../../../salas/domain/entities/playlist_material.dart';
 import '../providers/praise_providers.dart';
 import '../providers/translation_providers.dart';
 import '../../domain/entities/praise.dart';
+import '../../domain/services/translation_service.dart';
 
 /// Página de detalhes de um praise (mobile-first)
 class PraiseDetailPage extends ConsumerWidget {
@@ -30,7 +33,7 @@ class PraiseDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButtonWithDrawerOnLongPress(),
-        title: const Text('Detalhes do Louvor'),
+        title: AppBarTitleWithLogo.text('Detalhes do Louvor'),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.playlist_add),
@@ -283,184 +286,215 @@ class PraiseDetailPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho com nome e número
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    praise.displayName,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  if (praise.inReview)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Em revisão',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.orange,
-                                fontSize: 10,
-                              ),
-                        ),
-                      ),
+          // Cabeçalho com nome e número (sem card, texto dourado)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                praise.displayName,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                ],
               ),
-            ),
+              if (praise.inReview)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Em revisão',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.orange,
+                            fontSize: 10,
+                          ),
+                    ),
+                  ),
+                ),
+            ],
           ),
 
-          const SizedBox(height: 16),
-
-          // Informações adicionais
+          // Informações adicionais (sem card, textos dourados)
           if (praise.author != null ||
               praise.rhythm != null ||
               praise.tonality != null ||
-              praise.category != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Informações',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (praise.author != null)
-                      _InfoRow(
-                        icon: Icons.person,
-                        label: 'Autor',
-                        value: praise.author!,
-                      ),
-                    if (praise.rhythm != null)
-                      _InfoRow(
-                        icon: Icons.music_note,
-                        label: 'Ritmo',
-                        value: praise.rhythm!,
-                      ),
-                    if (praise.tonality != null)
-                      _InfoRow(
-                        icon: Icons.tune,
-                        label: 'Tom',
-                        value: praise.tonality!,
-                      ),
-                    if (praise.category != null)
-                      _InfoRow(
-                        icon: Icons.category,
-                        label: 'Categoria',
-                        value: praise.category!,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Tags
-          if (praise.tags.isNotEmpty) ...[
+              praise.category != null) ...[
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tags',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: praise.tags.map((tag) {
-                        return Consumer(
-                          builder: (context, ref, _) {
-                            // Garante que as traduções foram carregadas
-                            ref.watch(translationsLoadedProvider);
-                            final translationService = ref.watch(translationServiceProvider);
-                            final translatedName = translationService.getPraiseTagName(tag.id, tag.name);
-                            return Chip(
-                              label: Text(translatedName),
-                            );
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (praise.author != null)
+                  _InfoRow(
+                    icon: Icons.person,
+                    label: 'Autor',
+                    value: praise.author!,
+                  ),
+                if (praise.rhythm != null)
+                  _InfoRow(
+                    icon: Icons.music_note,
+                    label: 'Ritmo',
+                    value: praise.rhythm!,
+                  ),
+                if (praise.tonality != null)
+                  _InfoRow(
+                    icon: Icons.tune,
+                    label: 'Tom',
+                    value: praise.tonality!,
+                  ),
+                if (praise.category != null)
+                  _InfoRow(
+                    icon: Icons.category,
+                    label: 'Categoria',
+                    value: praise.category!,
+                  ),
+              ],
             ),
           ],
 
-          // Materiais
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.description,
-                        color: Theme.of(context).colorScheme.primary,
+          // Tags (sem card, chips dourados)
+          if (praise.tags.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: praise.tags.map((tag) {
+                return Consumer(
+                  builder: (context, ref, _) {
+                    // Garante que as traduções foram carregadas
+                    ref.watch(translationsLoadedProvider);
+                    final translationService = ref.watch(translationServiceProvider);
+                    final translatedName = translationService.getPraiseTagName(tag.id, tag.name);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Materiais (${praise.materials.length})',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-                  if (praise.materials.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Center(
-                        child: Text(
-                          'Nenhum material disponível',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[400],
-                              ),
+                      child: Text(
+                        translatedName,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
                         ),
                       ),
-                    )
-                    else
-                    ...praise.materials.map((material) {
-                      return _MaterialTile(
-                        material: material,
-                        praiseName: praise.name,
-                        praiseId: praise.id,
-                        salaId: salaId,
-                      );
-                    }),
-                ],
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+
+          // Materiais (sem card, cada material em seu próprio card)
+          if (praise.materials.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Consumer(
+              builder: (context, ref, _) {
+                // Garante que as traduções foram carregadas
+                ref.watch(translationsLoadedProvider);
+                final translationService = ref.watch(translationServiceProvider);
+                final sortedMaterials = _groupAndSortMaterials(
+                  praise.materials,
+                  translationService,
+                );
+                return Column(
+                  children: sortedMaterials.map((material) {
+                    return _MaterialCard(
+                      material: material,
+                      praiseName: praise.name,
+                      praiseId: praise.id,
+                      salaId: salaId,
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                'Nenhum material disponível',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[400],
+                    ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Retorna a ordem de prioridade do tipo de material
+  int _getMaterialTypeOrder(String typeName) {
+    final normalized = typeName.toLowerCase();
+    if (normalized.contains('pdf')) return 1;
+    if (normalized.contains('audio')) return 2;
+    if (normalized.contains('text')) return 3;
+    if (normalized.contains('youtube')) return 4;
+    if (normalized.contains('spotify')) return 5;
+    return 6; // Resto ordenado alfabeticamente
+  }
+
+  /// Agrupa e ordena materiais por tipo, depois alfabeticamente dentro de cada grupo
+  List<PraiseMaterial> _groupAndSortMaterials(
+    List<PraiseMaterial> materials,
+    TranslationService translationService,
+  ) {
+    // 1. Agrupar por materialType.name
+    final Map<String, List<PraiseMaterial>> grouped = {};
+    for (final material in materials) {
+      final typeName = material.materialType?.name.toLowerCase() ?? 'other';
+      grouped.putIfAbsent(typeName, () => []).add(material);
+    }
+
+    // 2. Ordenar dentro de cada grupo por tradução do materialKindName
+    for (final group in grouped.values) {
+      group.sort((a, b) {
+        final nameA = translationService.getMaterialKindName(
+          a.materialKindId,
+          a.materialKind?.name ?? '',
+        );
+        final nameB = translationService.getMaterialKindName(
+          b.materialKindId,
+          b.materialKind?.name ?? '',
+        );
+        return nameA.compareTo(nameB);
+      });
+    }
+
+    // 3. Ordenar grupos
+    final sortedGroups = grouped.entries.toList()
+      ..sort((a, b) {
+        final orderA = _getMaterialTypeOrder(a.key);
+        final orderB = _getMaterialTypeOrder(b.key);
+        
+        // Se ambos têm ordem específica (1-5), ordenar por ordem
+        if (orderA < 6 && orderB < 6) {
+          return orderA.compareTo(orderB);
+        }
+        
+        // Se ambos são "resto" (ordem 6), ordenar alfabeticamente pelo nome do tipo
+        if (orderA == 6 && orderB == 6) {
+          return a.key.compareTo(b.key);
+        }
+        
+        // Se um tem ordem específica e outro é resto, ordem específica vem primeiro
+        return orderA.compareTo(orderB);
+      });
+
+    // 4. Flatten a lista de grupos em uma única lista
+    return sortedGroups.expand((group) => group.value).toList();
   }
 }
 
@@ -477,22 +511,26 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final goldColor = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
+          Icon(icon, size: 20, color: goldColor),
           const SizedBox(width: 8),
           Text(
             '$label: ',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
+                  color: goldColor,
                 ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: goldColor,
+                  ),
             ),
           ),
         ],
@@ -501,13 +539,13 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _MaterialTile extends ConsumerWidget {
+class _MaterialCard extends ConsumerWidget {
   final PraiseMaterial material;
   final String praiseName;
   final String praiseId;
   final String? salaId;
 
-  const _MaterialTile({
+  const _MaterialCard({
     required this.material,
     required this.praiseName,
     required this.praiseId,
@@ -537,7 +575,7 @@ class _MaterialTile extends ConsumerWidget {
   Color _getMaterialColor(BuildContext context) {
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
     if (materialTypeName.contains('pdf')) {
-      return Colors.red;
+      return Colors.orange; // Laranja para PDF
     } else if (materialTypeName.contains('youtube')) {
       return Colors.red;
     } else if (materialTypeName.contains('audio')) {
@@ -559,138 +597,156 @@ class _MaterialTile extends ConsumerWidget {
       material.materialKindId,
       material.materialKind?.name ?? 'Material',
     );
-    final materialTypeName = translationService.getMaterialTypeName(
-      material.materialTypeId,
-      material.materialType?.name ?? '',
-    );
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: _getMaterialColor(context).withValues(alpha: 0.1),
-        child: _isYoutube()
-            ? const FaIcon(
-                FontAwesomeIcons.youtube,
-                color: Colors.red,
-                size: 28,
-              )
-            : Icon(
-                _getMaterialIcon(),
-                color: _getMaterialColor(context),
-              ),
-      ),
-      title: Text(materialKindName),
-      subtitle: Text(materialTypeName),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () async {
-        final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
-        // YouTube: abrir no app (se instalado) ou no navegador
-        if (materialTypeName.contains('youtube')) {
-          final path = material.path.trim();
-          final videoId = extractYoutubeVideoId(path);
-          final url = videoId != null
-              ? 'https://www.youtube.com/watch?v=$videoId'
-              : (path.startsWith('http') ? path : 'https://www.youtube.com/watch?v=$path');
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Não foi possível abrir: $url')),
-            );
-          }
-          return;
-        }
-
-        // Se há salaId e o material é PDF ou Lyrics, adiciona à playlist
-        if (salaId != null) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: InkWell(
+        onTap: () async {
           final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
-          final isPdf = materialTypeName.contains('pdf');
-          final isLyrics = materialTypeName.contains('text') || 
-                          materialTypeName.contains('lyric') ||
-                          (material.path.length > 100 && 
-                           !material.path.contains('.pdf') && 
-                           !material.path.contains('.mp3'));
-          
-          if (isPdf || isLyrics) {
-            final participanteId = await ref.read(participanteIdProvider.future);
-            final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
-            
-            final translationService = ref.read(translationServiceProvider);
-            final translatedMaterialKindName = translationService.getMaterialKindName(
-              material.materialKindId,
-              material.materialKind?.name ?? 'Material',
-            );
-            
-            final materialNaPlaylist = MaterialNaPlaylist(
-              materialId: material.id,
-              praiseId: praiseId,
-              materialKindId: material.materialKindId,
-              materialTypeId: material.materialTypeId,
-              nomeMaterial: translatedMaterialKindName,
-              nomePraise: praiseName,
-              tipoMaterial: isPdf ? 'pdf' : 'lyrics',
-            );
-            
-            await playlistRepo.addMaterial(salaId!, participanteId, materialNaPlaylist);
-            ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: salaId!)));
-            
-            if (context.mounted) {
+          // YouTube: abrir no app (se instalado) ou no navegador
+          if (materialTypeName.contains('youtube')) {
+            final path = material.path.trim();
+            final videoId = extractYoutubeVideoId(path);
+            final url = videoId != null
+                ? 'https://www.youtube.com/watch?v=$videoId'
+                : (path.startsWith('http') ? path : 'https://www.youtube.com/watch?v=$path');
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Material adicionado à playlist')),
+                SnackBar(content: Text('Não foi possível abrir: $url')),
               );
             }
             return;
           }
-        }
-        
-        // Determinar a rota baseada no tipo de material
-        final path = material.path;
-        
-        // Verifica se o path parece ser texto (lyrics) em vez de arquivo
-        // Textos geralmente são longos, não têm extensão de arquivo, e não contêm "/"
-        final isLikelyText = path.length > 100 && 
-                            !path.contains('.pdf') && 
-                            !path.contains('.mp3') && 
-                            !path.contains('/') &&
-                            !path.contains('\\');
-        
-        String route;
-        Map<String, String> queryParams = {
-          'path': material.path,
-          'name': '$praiseName - $materialKindName',
-        };
-        
-        // Se parece ser texto, sempre usa leitor de letras
-        if (isLikelyText || materialTypeName.contains('text') || materialTypeName.contains('lyric')) {
-          route = '/reader/lyrics/${material.id}';
-        } else if (materialTypeName.contains('pdf')) {
-          // Só abre como PDF se realmente parece ser um arquivo PDF
-          final extension = path.split('.').last.toLowerCase();
-          if (extension == 'pdf' || path.contains('.pdf')) {
-            route = '/reader/pdf/${material.id}';
+
+          // Se há salaId e o material é PDF ou Lyrics, adiciona à playlist
+          if (salaId != null) {
+            final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
+            final isPdf = materialTypeName.contains('pdf');
+            final isLyrics = materialTypeName.contains('text') || 
+                            materialTypeName.contains('lyric') ||
+                            (material.path.length > 100 && 
+                             !material.path.contains('.pdf') && 
+                             !material.path.contains('.mp3'));
+            
+            if (isPdf || isLyrics) {
+              final participanteId = await ref.read(participanteIdProvider.future);
+              final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
+              
+              final translationService = ref.read(translationServiceProvider);
+              final translatedMaterialKindName = translationService.getMaterialKindName(
+                material.materialKindId,
+                material.materialKind?.name ?? 'Material',
+              );
+              
+              final materialNaPlaylist = MaterialNaPlaylist(
+                materialId: material.id,
+                praiseId: praiseId,
+                materialKindId: material.materialKindId,
+                materialTypeId: material.materialTypeId,
+                nomeMaterial: translatedMaterialKindName,
+                nomePraise: praiseName,
+                tipoMaterial: isPdf ? 'pdf' : 'lyrics',
+              );
+              
+              await playlistRepo.addMaterial(salaId!, participanteId, materialNaPlaylist);
+              ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: salaId!)));
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Material adicionado à playlist')),
+                );
+              }
+              return;
+            }
+          }
+          
+          // Determinar a rota baseada no tipo de material
+          final path = material.path;
+          
+          // Verifica se o path parece ser texto (lyrics) em vez de arquivo
+          // Textos geralmente são longos, não têm extensão de arquivo, e não contêm "/"
+          final isLikelyText = path.length > 100 && 
+                              !path.contains('.pdf') && 
+                              !path.contains('.mp3') && 
+                              !path.contains('/') &&
+                              !path.contains('\\');
+          
+          String route;
+          Map<String, String> queryParams = {
+            'path': material.path,
+            'name': '$praiseName - $materialKindName',
+            'materialKindId': material.materialKindId,
+            'materialKindName': materialKindName,
+          };
+
+          // Se parece ser texto, sempre usa leitor de letras
+          if (isLikelyText || materialTypeName.contains('text') || materialTypeName.contains('lyric')) {
+            route = '/reader/lyrics/${material.id}';
+          } else if (materialTypeName.contains('pdf')) {
+            // Só abre como PDF se realmente parece ser um arquivo PDF
+            final extension = path.split('.').last.toLowerCase();
+            if (extension == 'pdf' || path.contains('.pdf')) {
+              route = '/reader/pdf/${material.id}';
+            } else {
+              // Se o tipo é PDF mas o path não tem extensão .pdf, pode ser texto
+              route = '/reader/lyrics/${material.id}';
+            }
+          } else if (materialTypeName.contains('audio') ||
+              ['mp3', 'wav', 'ogg', 'm4a'].contains(path.split('.').last.toLowerCase())) {
+            route = '/reader/audio/${material.id}';
           } else {
-            // Se o tipo é PDF mas o path não tem extensão .pdf, pode ser texto
             route = '/reader/lyrics/${material.id}';
           }
-        } else if (materialTypeName.contains('audio') ||
-            ['mp3', 'wav', 'ogg', 'm4a'].contains(path.split('.').last.toLowerCase())) {
-          route = '/reader/audio/${material.id}';
-        } else {
-          route = '/reader/lyrics/${material.id}';
-        }
 
-        // Incluir praiseName, materialKindName e materialKindId para o drawer do player de áudio
-        if (route.contains('/reader/audio/')) {
-          queryParams['praiseName'] = praiseName;
-          queryParams['materialKindName'] = materialKindName;
-          queryParams['materialKindId'] = material.materialKindId;
-        }
-        final uri = Uri(
-          path: route,
-          queryParameters: queryParams,
-        );
-        context.push(uri.toString());
-      },
+          // Incluir praiseName para o drawer do player de áudio (kind já está em queryParams)
+          if (route.contains('/reader/audio/')) {
+            queryParams['praiseName'] = praiseName;
+          }
+          final uri = Uri(
+            path: route,
+            queryParameters: queryParams,
+          );
+          context.push(uri.toString());
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: _getMaterialColor(context).withValues(alpha: 0.1),
+                child: _isYoutube()
+                    ? const FaIcon(
+                        FontAwesomeIcons.youtube,
+                        color: Colors.red,
+                        size: 28,
+                      )
+                    : Icon(
+                        _getMaterialIcon(),
+                        color: _getMaterialColor(context),
+                      ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  materialKindName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: AppTheme.textTertiaryColor,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

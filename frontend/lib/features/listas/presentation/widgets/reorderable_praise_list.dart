@@ -11,6 +11,7 @@ class ReorderablePraiseList extends StatelessWidget {
     required this.onRemove,
     required this.onTap,
     required this.emptyMessage,
+    this.emptyInstruction,
     required this.emptyActionLabel,
     required this.onEmptyActionPressed,
   });
@@ -20,6 +21,7 @@ class ReorderablePraiseList extends StatelessWidget {
   final Future<void> Function(String praiseId) onRemove;
   final void Function(Praise praise) onTap;
   final String emptyMessage;
+  final String? emptyInstruction;
   final String emptyActionLabel;
   final VoidCallback onEmptyActionPressed;
 
@@ -28,9 +30,31 @@ class ReorderablePraiseList extends StatelessWidget {
     if (items.isEmpty) {
       return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emptyMessage),
+            Icon(
+              Icons.music_note,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              emptyMessage,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey[400],
+                  ),
+            ),
+            if (emptyInstruction != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                emptyInstruction!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[400],
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: onEmptyActionPressed,
@@ -88,22 +112,57 @@ class _PraiseListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return Container(
       key: key,
-      leading: ReorderableDragStartListener(
-        index: index,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.grab,
-          child: const Icon(Icons.drag_handle),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5E6D3),
+        border: Border.all(
+          color: const Color(0xFFD4AF37),
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Icon(
+                      Icons.drag_handle,
+                      color: const Color(0xFFD4AF37),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    item.praise.displayName,
+                    style: const TextStyle(
+                      color: Color(0xFF5A2A2A),
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'EB Garamond',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: const Color(0xFFD4AF37),
+                  onPressed: onRemove,
+                  tooltip: 'Remover',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      title: Text(item.praise.displayName),
-      trailing: IconButton(
-        icon: const Icon(Icons.remove_circle_outline),
-        onPressed: onRemove,
-        tooltip: 'Remover',
-      ),
-      onTap: onTap,
     );
   }
 }

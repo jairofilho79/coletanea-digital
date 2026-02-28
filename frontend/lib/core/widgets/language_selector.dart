@@ -21,6 +21,14 @@ class LanguageSelector extends ConsumerWidget {
       trailing: DropdownButton<String>(
         value: currentLanguage,
         underline: const SizedBox.shrink(),
+        dropdownColor: Theme.of(context).colorScheme.surface,
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         items: supportedLanguages.map((code) {
           return DropdownMenuItem<String>(
             value: code,

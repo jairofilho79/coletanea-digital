@@ -47,81 +47,130 @@ class _PraiseSearchBarState extends State<PraiseSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: widget.controller,
-            builder: (context, value, child) {
-              Widget? suffixIcon;
-              if (value.text.isNotEmpty && widget.onAdvancedTap != null) {
-                suffixIcon = Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        widget.controller.clear();
-                        _debounceTimer?.cancel();
-                        widget.onSearch('');
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.tune),
-                      onPressed: widget.onAdvancedTap,
-                      tooltip: 'Filtros avançados',
-                    ),
-                  ],
-                );
-              } else if (value.text.isEmpty && widget.onAdvancedTap != null) {
-                suffixIcon = IconButton(
-                  icon: const Icon(Icons.tune),
-                  onPressed: widget.onAdvancedTap,
-                  tooltip: 'Filtros avançados',
-                );
-              } else if (value.text.isNotEmpty) {
-                suffixIcon = IconButton(
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: widget.controller,
+        builder: (context, value, child) {
+          Widget? suffixIcon;
+          if (value.text.isNotEmpty && widget.onAdvancedTap != null) {
+            suffixIcon = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {
                     widget.controller.clear();
                     _debounceTimer?.cancel();
                     widget.onSearch('');
                   },
-                );
-              }
-              return TextField(
-                controller: widget.controller,
-                focusNode: widget.focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Buscar louvores...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: suffixIcon,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.tune),
+                  onPressed: widget.onAdvancedTap,
+                  tooltip: 'Filtros avançados',
+                ),
+              ],
+            );
+          } else if (value.text.isEmpty && widget.onAdvancedTap != null) {
+            suffixIcon = IconButton(
+              icon: const Icon(Icons.tune),
+              onPressed: widget.onAdvancedTap,
+              tooltip: 'Filtros avançados',
+            );
+          } else if (value.text.isNotEmpty) {
+            suffixIcon = IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                widget.controller.clear();
+                _debounceTimer?.cancel();
+                widget.onSearch('');
+              },
+            );
+          }
+          // Constante para garantir que border-radius seja idêntico em todos os lugares
+          const double borderRadius = 12.0;
+          
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                // Sombra dourada brilhante - múltiplas camadas para efeito de luz reluzente
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 16,
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  blurRadius: 32,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              style: const TextStyle(
+                color: Color(0xFF1A1A1A), // Texto preto ao digitar (contraste com fundo bege)
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Buscar louvores...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro para contraste adequado com fundo bege
+                  fontWeight: FontWeight.w400,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                suffixIcon: suffixIcon,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
                   ),
                 ),
-                onChanged: _onChanged,
-                textInputAction: TextInputAction.search,
-              );
-            },
-          ),
-        ],
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              onChanged: _onChanged,
+              textInputAction: TextInputAction.search,
+            ),
+          );
+        },
       ),
     );
   }

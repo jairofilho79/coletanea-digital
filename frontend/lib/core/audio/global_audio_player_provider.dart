@@ -113,7 +113,16 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
       updateState(isLoading: false);
       await player.play();
     } catch (e) {
-      updateState(isLoading: false, error: 'Erro ao carregar áudio: $e');
+      final errStr = e.toString().toLowerCase();
+      final isConnectionError = errStr.contains('socket') ||
+          errStr.contains('connection') ||
+          errStr.contains('timeout') ||
+          errStr.contains('failed host lookup') ||
+          errStr.contains('network is unreachable');
+      final message = isConnectionError
+          ? 'Você está offline e este material não está disponível no dispositivo. Conecte-se para baixar ou acesse a tela "Materiais offline" para gerenciar o cache.'
+          : 'Erro ao carregar áudio: $e';
+      updateState(isLoading: false, error: message);
     }
   }
 

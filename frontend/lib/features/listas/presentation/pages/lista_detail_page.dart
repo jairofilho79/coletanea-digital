@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/lista_providers.dart';
 import '../widgets/reorderable_praise_list.dart';
@@ -69,6 +70,55 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
     ref.invalidate(listasProvider);
   }
 
+  Future<void> _confirmDelete(Lista lista) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF4B2D2B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFFD4AF37),
+            width: 2,
+          ),
+        ),
+        title: const Text(
+          'Excluir lista',
+          style: TextStyle(
+            color: Color(0xFFD4AF37),
+            fontFamily: 'EB Garamond',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Excluir a lista "${lista.name}"? Esta ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Color(0xFFD4AF37)),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await ref.read(listaRepositoryProvider).deleteLista(lista.id);
+      ref.invalidate(listasProvider);
+      if (mounted) context.go('/listas');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final listaAsync = ref.watch(listaProvider(widget.listaId));
@@ -82,7 +132,20 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
                 tooltip: 'Menu',
               )
             : null,
-        title: const Text('Detalhe da lista'),
+        title: AppBarTitleWithLogo.text('Detalhe da lista'),
+        actions: [
+          Builder(
+            builder: (context) {
+              final lista = listaAsync.whenOrNull(data: (d) => d);
+              if (lista == null) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _confirmDelete(lista),
+                tooltip: 'Excluir lista',
+              );
+            },
+          ),
+        ],
       ),
       body: listaAsync.when(
         data: (lista) {
@@ -127,9 +190,37 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome',
-                        border: OutlineInputBorder(),
+                      style: const TextStyle(
+                        color: Color(0xFF1A1A1A), // Texto preto ao digitar
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Ex: Louvores de domingo',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF5E6D3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD4AF37),
+                            width: 2,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD4AF37),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF4D03F),
+                            width: 2,
+                          ),
+                        ),
                       ),
                       onChanged: (_) => _nameDirty = true,
                       onSubmitted: (_) => _saveName(lista),
@@ -137,9 +228,37 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Descrição',
-                        border: OutlineInputBorder(),
+                      style: const TextStyle(
+                        color: Color(0xFF1A1A1A), // Texto preto ao digitar
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Lista de glorificação no dia 12/03/2017 para o casamento de...',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF5E6D3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD4AF37),
+                            width: 2,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD4AF37),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF4D03F),
+                            width: 2,
+                          ),
+                        ),
                       ),
                       maxLines: 2,
                       onChanged: (_) => _descriptionDirty = true,
@@ -159,6 +278,7 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
                 child: ReorderablePraiseList(
                   items: lista.praises,
                   emptyMessage: 'Nenhum louvor nesta lista.',
+                  emptyInstruction: 'Toque no botão abaixo para adicionar um louvor.',
                   emptyActionLabel: 'Adicionar louvor',
                   onEmptyActionPressed: () => context.push('/praises?addToLista=${lista.id}'),
                   onReorder: (oldIndex, newIndex) async {

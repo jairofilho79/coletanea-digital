@@ -9,6 +9,7 @@ import '../../features/salas/presentation/pages/sala_detail_page.dart';
 import '../../features/reader/presentation/pages/pdf_reader_page.dart';
 import '../../features/reader/presentation/pages/audio_reader_page.dart';
 import '../../features/reader/presentation/pages/lyrics_reader_page.dart';
+import '../../features/offline/presentation/pages/offline_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -78,6 +79,8 @@ final appRouter = GoRouter(
             final materialId = state.pathParameters['materialId']!;
             final materialPath = state.uri.queryParameters['path'] ?? '';
             final materialName = state.uri.queryParameters['name'];
+            final materialKindId = state.uri.queryParameters['materialKindId'];
+            final materialKindName = state.uri.queryParameters['materialKindName'];
             final salaId = state.uri.queryParameters['salaId'];
             final participanteId = state.uri.queryParameters['participanteId'];
             final materialIndex = state.uri.queryParameters['materialIndex'];
@@ -85,6 +88,8 @@ final appRouter = GoRouter(
               materialId: materialId,
               materialPath: materialPath,
               materialName: materialName,
+              materialKindId: materialKindId,
+              materialKindName: materialKindName,
               salaId: salaId,
               participanteId: participanteId,
               materialIndex: materialIndex != null ? int.tryParse(materialIndex) : null,
@@ -112,12 +117,19 @@ final appRouter = GoRouter(
           },
         ),
         GoRoute(
+          path: '/offline',
+          name: 'offline',
+          builder: (context, state) => const OfflinePage(),
+        ),
+        GoRoute(
           path: '/reader/lyrics/:materialId',
           name: 'lyrics_reader',
           builder: (context, state) {
             final materialId = state.pathParameters['materialId']!;
             final materialPath = state.uri.queryParameters['path'] ?? '';
             final materialName = state.uri.queryParameters['name'];
+            final materialKindId = state.uri.queryParameters['materialKindId'];
+            final materialKindName = state.uri.queryParameters['materialKindName'];
             final salaId = state.uri.queryParameters['salaId'];
             final participanteId = state.uri.queryParameters['participanteId'];
             final materialIndex = state.uri.queryParameters['materialIndex'];
@@ -125,6 +137,8 @@ final appRouter = GoRouter(
               materialId: materialId,
               materialPath: materialPath,
               materialName: materialName,
+              materialKindId: materialKindId,
+              materialKindName: materialKindName,
               salaId: salaId,
               participanteId: participanteId,
               materialIndex: materialIndex != null ? int.tryParse(materialIndex) : null,

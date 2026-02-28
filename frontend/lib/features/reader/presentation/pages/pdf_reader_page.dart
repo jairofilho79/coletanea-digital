@@ -4,6 +4,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/storage/providers.dart';
 import '../../../../core/config/app_config.dart';
@@ -17,6 +18,8 @@ class PdfReaderPage extends ConsumerStatefulWidget {
   final String materialId;
   final String materialPath;
   final String? materialName;
+  final String? materialKindId;
+  final String? materialKindName;
   final String? salaId; // ID da sala se vindo de uma sala
   final String? participanteId; // ID do participante
   final int? materialIndex; // Índice do material na playlist
@@ -26,6 +29,8 @@ class PdfReaderPage extends ConsumerStatefulWidget {
     required this.materialId,
     required this.materialPath,
     this.materialName,
+    this.materialKindId,
+    this.materialKindName,
     this.salaId,
     this.participanteId,
     this.materialIndex,
@@ -106,7 +111,13 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Erro ao carregar PDF: $e';
+        final isNetworkError = e is DioException &&
+            (e.type == DioExceptionType.connectionError ||
+                e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.receiveTimeout);
+        _error = isNetworkError
+            ? 'Você está offline e este material não está disponível no dispositivo. Conecte-se para baixar ou acesse a tela "Materiais offline" para gerenciar o cache.'
+            : 'Erro ao carregar PDF: $e';
       });
     }
   }
@@ -147,6 +158,8 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
             materialId: widget.materialId,
             extension: 'pdf',
             data: bytes,
+            materialKindId: widget.materialKindId,
+            materialKindName: widget.materialKindName,
           );
         }
 
@@ -197,7 +210,9 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
                 tooltip: 'Voltar para playlist',
               )
             : const BackButtonWithDrawerOnLongPress(),
-        title: Text(widget.materialName ?? 'PDF'),
+        title: AppBarTitleWithLogo(
+          title: Text(widget.materialName ?? 'PDF'),
+        ),
         actions: [
           // Botão próximo material quando vindo de sala
           if (widget.salaId != null && widget.participanteId != null && widget.materialIndex != null)
@@ -211,6 +226,7 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
                   '$_currentPage de $_totalPages',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
                 ),
               ),

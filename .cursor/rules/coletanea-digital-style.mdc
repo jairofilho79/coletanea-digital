@@ -1,0 +1,407 @@
+---
+description: Diretrizes de estilo visual para a Coletânea Digital Flutter - cores, tipografia e componentes
+alwaysApply: true
+---
+
+# Diretrizes de Estilo - Coletânea Digital (Flutter)
+
+## Paleta de Cores
+
+### Cores Principais
+- **Background Principal**: `Color(0xFF4B2D2B)` (marrom avermelhado escuro) - usar em vez de preto/cinza escuro
+- **Card/Container**: `Color(0xFFF5E6D3)` (bege suave, menos intenso) - para cards, inputs e áreas de conteúdo
+- **Dourado Principal**: `Color(0xFFD4AF37)` - para bordas, destaques e elementos dourados
+- **Dourado Claro**: `Color(0xFFF4D03F)` - para hover states e efeitos de luz
+- **Título/Texto Principal**: `Color(0xFF5A2A2A)` (marrom avermelhado escuro) - para títulos e textos importantes
+- **Botão Background**: `Color(0xFF6A3B39)` (marrom avermelhado médio) - para botões secundários
+- **Texto Claro**: `Color(0xFFFFFFFF)` - para texto sobre fundo escuro
+- **Texto Escuro**: `Color(0xFF1A1A1A)` - para texto sobre fundo claro (preto suave para melhor contraste)
+- **Texto Secundário**: `Color(0xFF5A5A5A)` - para textos secundários sobre fundo claro
+- **Texto Terciário**: `Color(0xFF6B6B6B)` - para ícones e elementos secundários sobre fundo claro
+
+### Uso de Cores
+- **NUNCA usar preto puro** (`Colors.black` ou `Color(0xFF000000)`) - sempre usar `Color(0xFF4B2D2B)` ou variantes marrons avermelhadas
+- **Usar dourado generosamente** em textos importantes, bordas e elementos de destaque
+- Backgrounds devem usar tons marrons avermelhados, não cinzas escuros
+
+## Tipografia
+
+### Fonte Principal
+- **Família**: `EB Garamond` + `serif` como fallback
+- **Uso**: Títulos (TextTheme.displayLarge, titleLarge, etc.), textos importantes, logo
+- **Configuração**: Adicionar no `pubspec.yaml` e usar `fontFamily: 'EB Garamond'`
+
+### Fonte Secundária
+- **Família**: `Open Sans` ou `sans-serif` como fallback
+- **Uso**: Textos corridos, labels, descrições
+
+### Estilos de Texto
+- **Títulos**: Usar `fontFamily: 'EB Garamond'`, `fontWeight: FontWeight.bold` com `shadows` sutis
+- **Textos dourados**: Usar cor `Color(0xFFD4AF37)` com sombra sutil
+- **Subtítulos**: Usar cor `Color(0xFF6A2F2F)`
+
+## Componentes Flutter
+
+### Botões com Light-Beam
+
+#### Widget LightBeam
+```dart
+class LightBeam extends StatelessWidget {
+  final bool isActive;
+  final double width;
+  
+  const LightBeam({
+    super.key,
+    this.isActive = false,
+    this.width = 0.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: -2,
+      left: 0,
+      right: 0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 4,
+        width: isActive ? width : 0,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.transparent,
+              const Color(0xFFFFF0A0).withOpacity(0.95),
+              const Color(0xFFFFE678),
+              const Color(0xFFFFDC64),
+              const Color(0xFFFFE678),
+              const Color(0xFFFFF0A0).withOpacity(0.95),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFDC64).withOpacity(1),
+              blurRadius: 12,
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: const Color(0xFFFFDC64).withOpacity(0.8),
+              blurRadius: 24,
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: const Color(0xFFFFDC64).withOpacity(0.6),
+              blurRadius: 36,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### Botão com Light-Beam
+```dart
+class ColetaneaButton extends StatefulWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isActive;
+  
+  const ColetaneaButton({
+    super.key,
+    required this.text,
+    this.onPressed,
+    this.isActive = false,
+  });
+
+  @override
+  State<ColetaneaButton> createState() => _ColetaneaButtonState();
+}
+
+class _ColetaneaButtonState extends State<ColetaneaButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ElevatedButton(
+            onPressed: widget.onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A3B39),
+              foregroundColor: Colors.white,
+              side: BorderSide(
+                color: widget.isActive || _isHovered
+                    ? const Color(0xFFF4D03F)
+                    : const Color(0xFFD4AF37),
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(widget.text),
+          ),
+          if (widget.isActive || _isHovered)
+            LightBeam(
+              isActive: true,
+              width: MediaQuery.of(context).size.width * 0.6,
+            ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Cards e Containers
+- **Background**: `Color(0xFFF5E6D3)` (bege suave, menos intenso para melhor contraste)
+- **Borda**: `Border.all(color: Color(0xFFD4AF37), width: 2)`
+- **Texto Principal**: `Color(0xFF1A1A1A)` para texto sobre fundo claro (preto suave)
+- **Texto Secundário**: `Color(0xFF5A5A5A)` para textos secundários
+- **Texto Terciário**: `Color(0xFF6B6B6B)` para ícones e elementos secundários
+- **Cantos**: `BorderRadius.circular(12)`
+- **IMPORTANTE**: Nunca usar `Colors.grey[400]` ou cores muito claras sobre fundo bege - sempre usar as cores do tema para garantir contraste adequado
+
+### Inputs (TextField, TextFormField)
+- **Background**: `Color(0xFFF5E6D3)` (bege suave) - sempre usar `filled: true` e `fillColor`
+- **Borda**: `BorderSide(color: Color(0xFFD4AF37), width: 2)` - dourada padrão
+- **Borda Focada**: `BorderSide(color: Color(0xFFF4D03F), width: 2)` - dourado claro quando focado
+- **Border Radius**: `BorderRadius.circular(12)` - sempre usar 12px
+- **Texto Digitado**: `Color(0xFF1A1A1A)` (preto suave) - **SEMPRE preto**, nunca branco
+- **Placeholder**: `Color(0xFF5A5A5A)` - sempre cinza escuro para contraste adequado com fundo bege
+- **Label (dentro do input)**: `Color(0xFF5A5A5A)` - cinza escuro quando o label está dentro do campo
+- **Floating Label (quando sobe)**: `Color(0xFF5A5A5A)` - cinza escuro quando o label flutua acima do input
+- **IMPORTANTE**: 
+  - Sempre usar `floatingLabelStyle: TextStyle(color: Color(0xFF5A5A5A))` para garantir que o label flutuante seja cinza escuro
+  - Sempre definir explicitamente `style: TextStyle(color: Color(0xFF1A1A1A))` no TextField para garantir texto preto
+  - Sempre definir `labelStyle: TextStyle(color: Color(0xFF5A5A5A))` para o label quando dentro do input
+  - Nunca deixar o texto branco em inputs - sempre deve haver contraste adequado
+  - Placeholder e labels sempre devem ser cinza escuro (`Color(0xFF5A5A5A)`), nunca branco ou dourado
+
+### Dialogs e Modals
+- **Background**: `Color(0xFF4B2D2B)` (marrom avermelhado escuro/vermelho)
+- **Borda**: `BorderSide(color: Color(0xFFD4AF37), width: 2)` - sempre borda dourada
+- **Border Radius**: `BorderRadius.circular(12)`
+- **Título**: `Color(0xFFD4AF37)` (dourado) com `fontFamily: 'EB Garamond'` e `fontWeight: FontWeight.bold`
+- **Texto no Dialog**: `Colors.white` ou `Color(0xFFD4AF37)` dependendo do contexto
+- **Inputs dentro do Dialog**: Seguir padrão de inputs acima, com labels e placeholders em cinza escuro (`Color(0xFF5A5A5A)`)
+
+### AppBar
+- **Background**: `Color(0xFF4B2D2B)`
+- **Texto**: `Color(0xFFD4AF37)` ou `Colors.white`
+- **Borda inferior**: `Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 4))`
+- **Logo**: Usar logo da Coletânea Digital (branco para fundo escuro)
+
+## Logo
+
+### Localização
+- Logo está em `assets/logo/`
+- Versões disponíveis:
+  - `LOGO_BRANCO.svg` / `LOGO_BRANCO.png` - para fundos escuros
+  - `LOGO_COLORIDO_INLINE_GOLD_LIGHT.svg` - para fundos claros (versão inline sem elementos `<style>`)
+  - `LOGO_PRETO.svg` / `LOGO_PRETO.png` - para fundos claros (alternativa)
+
+### Uso
+```dart
+import 'package:flutter_svg/flutter_svg.dart';
+
+// No AppBar (fundo escuro)
+SvgPicture.asset(
+  'assets/logo/LOGO_BRANCO.svg',
+  height: 40,
+  fit: BoxFit.contain,
+)
+
+// Em cards (fundo claro)
+SvgPicture.asset(
+  'assets/logo/LOGO_COLORIDO_INLINE_GOLD_LIGHT.svg',
+  height: 40,
+  fit: BoxFit.contain,
+)
+```
+
+**Nota**: Sempre usar SVG em vez de PNG para logos, pois SVG é escalável e tem melhor qualidade em diferentes tamanhos de tela.
+
+## Princípios de Design e Contraste de Cores
+
+### Regra Fundamental de Contraste
+**SEMPRE deve haver contraste adequado entre fundo e texto:**
+- **Fundo escuro** (`Color(0xFF4B2D2B)` ou similar) → **Texto claro** (`Colors.white` ou `Color(0xFFD4AF37)`)
+- **Fundo claro** (`Color(0xFFF5E6D3)` ou similar) → **Texto escuro** (`Color(0xFF1A1A1A)` ou `Color(0xFF5A2A2A)`)
+- **NUNCA** fundo escuro com texto escuro
+- **NUNCA** fundo claro com texto claro
+
+### Padrão Visual Geral
+- **Fundo vermelho** (marrom avermelhado escuro `Color(0xFF4B2D2B)`): Texto branco e detalhes dourados
+- **Fundo claro** (cards, inputs `Color(0xFFF5E6D3)`): 
+  - Texto principal: vermelho vinho (`Color(0xFF5A2A2A)`)
+  - Texto secundário: cinza escuro (`Color(0xFF5A5A5A)`)
+  - Texto em inputs: preto (`Color(0xFF1A1A1A)`)
+  - Placeholder: cinza escuro (`Color(0xFF5A5A5A)`)
+
+### Princípios de Design
+
+1. **Elegância**: Estilo clássico e sofisticado, não moderno/minimalista
+2. **Contraste**: Usar dourado para destacar elementos importantes e **sempre garantir contraste adequado entre fundo e texto**
+3. **Consistência**: Manter paleta de cores em toda a aplicação
+4. **Light-Beam**: Sempre usar em botões ativos para manter identidade visual
+5. **Tipografia**: Preferir Garamond para elementos importantes, criar hierarquia clara
+6. **Acessibilidade**: Sempre verificar contraste de cores para garantir legibilidade
+
+## Exemplos de Uso
+
+### Título Principal
+```dart
+Text(
+  'Coletânea Digital',
+  style: TextStyle(
+    fontFamily: 'EB Garamond',
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: const Color(0xFFD4AF37),
+    shadows: [
+      Shadow(
+        offset: const Offset(1, 1),
+        blurRadius: 2,
+        color: Colors.black.withOpacity(0.3),
+      ),
+    ],
+  ),
+)
+```
+
+### Card
+```dart
+Container(
+  decoration: BoxDecoration(
+    color: const Color(0xFFF5E6D3), // Bege suave
+    border: Border.all(
+      color: const Color(0xFFD4AF37),
+      width: 2,
+    ),
+    borderRadius: BorderRadius.circular(12),
+  ),
+  padding: const EdgeInsets.all(16),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Título',
+        style: TextStyle(
+          fontFamily: 'EB Garamond',
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xFF5A2A2A), // Vermelho vinho para texto principal
+        ),
+      ),
+      Text(
+        'Conteúdo do card...',
+        style: TextStyle(
+          color: const Color(0xFF5A5A5A), // Cinza escuro para texto secundário
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+### Input (TextField)
+```dart
+TextField(
+  style: const TextStyle(
+    color: Color(0xFF1A1A1A), // Texto preto ao digitar - OBRIGATÓRIO
+  ),
+  decoration: InputDecoration(
+    labelText: 'Nome da lista',
+    labelStyle: const TextStyle(
+      color: Colors.white, // Label branco se sobre fundo escuro
+      // OU Color(0xFF1A1A1A) se sobre fundo claro
+    ),
+    hintText: 'Ex: Louvores de domingo',
+    hintStyle: const TextStyle(
+      color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+    ),
+    labelStyle: const TextStyle(
+      color: Color(0xFF5A5A5A), // Label cinza escuro quando dentro do input
+    ),
+    floatingLabelStyle: const TextStyle(
+      color: Color(0xFF5A5A5A), // Label cinza escuro quando flutuando
+    ),
+    filled: true,
+    fillColor: const Color(0xFFF5E6D3), // Fundo bege
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Color(0xFFD4AF37), // Borda dourada
+        width: 2,
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Color(0xFFD4AF37),
+        width: 2,
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Color(0xFFF4D03F), // Dourado claro quando focado
+        width: 2,
+      ),
+    ),
+  ),
+)
+```
+
+### Dialog com Inputs
+```dart
+AlertDialog(
+  backgroundColor: const Color(0xFF4B2D2B), // Fundo vermelho
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+    side: const BorderSide(
+      color: Color(0xFFD4AF37), // Borda dourada
+      width: 2,
+    ),
+  ),
+  title: const Text(
+    'Nova Lista',
+    style: TextStyle(
+      color: Color(0xFFD4AF37), // Texto dourado
+      fontFamily: 'EB Garamond',
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  content: TextField(
+    style: const TextStyle(
+      color: Color(0xFF1A1A1A), // Texto preto ao digitar
+    ),
+    decoration: InputDecoration(
+      labelText: 'Nome',
+      labelStyle: const TextStyle(
+        color: Colors.white, // Label branco sobre fundo escuro
+      ),
+      hintText: 'Digite aqui',
+      hintStyle: const TextStyle(
+        color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+      ),
+      labelStyle: const TextStyle(
+        color: Color(0xFF5A5A5A), // Label cinza escuro quando dentro do input
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: Color(0xFF5A5A5A), // Label cinza escuro quando flutuando
+      ),
+      // ... resto da decoração igual ao exemplo acima
+    ),
+  ),
+)
+```

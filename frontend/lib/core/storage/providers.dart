@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../offline/offline_material_service.dart';
 import 'hive_service.dart';
 import 'material_cache_service.dart';
 import '../../features/reader/data/services/material_content_service.dart';
@@ -53,4 +54,10 @@ final materialCacheServiceProvider = Provider<MaterialCacheService>((ref) {
 final materialContentServiceProvider = Provider((ref) {
   final cacheService = ref.read(materialCacheServiceProvider);
   return MaterialContentService(cacheService: cacheService);
+});
+
+/// Provider for OfflineMaterialService (download em lote por material kind)
+final offlineMaterialServiceProvider = Provider<OfflineMaterialService>((ref) {
+  final cache = ref.read(materialCacheServiceProvider);
+  return OfflineMaterialService(cache: cache);
 });

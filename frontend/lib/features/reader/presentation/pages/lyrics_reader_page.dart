@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/storage/providers.dart';
 import '../../../../core/storage/hive_service.dart';
@@ -34,6 +36,8 @@ class LyricsReaderPage extends ConsumerStatefulWidget {
   final String materialId;
   final String materialPath;
   final String? materialName;
+  final String? materialKindId;
+  final String? materialKindName;
   final String? salaId; // ID da sala se vindo de uma sala
   final String? participanteId; // ID do participante
   final int? materialIndex; // Índice do material na playlist
@@ -43,6 +47,8 @@ class LyricsReaderPage extends ConsumerStatefulWidget {
     required this.materialId,
     required this.materialPath,
     this.materialName,
+    this.materialKindId,
+    this.materialKindName,
     this.salaId,
     this.participanteId,
     this.materialIndex,
@@ -175,6 +181,8 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
       final content = await contentService.getMaterialContent(
         widget.materialId,
         widget.materialPath,
+        materialKindId: widget.materialKindId,
+        materialKindName: widget.materialKindName,
       );
 
       setState(() {
@@ -207,7 +215,13 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Erro ao carregar letra: $e';
+        final isNetworkError = e is DioException &&
+            (e.type == DioExceptionType.connectionError ||
+                e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.receiveTimeout);
+        _error = isNetworkError
+            ? 'Você está offline e este material não está disponível no dispositivo. Conecte-se para baixar ou acesse a tela "Materiais offline" para gerenciar o cache.'
+            : 'Erro ao carregar letra: $e';
       });
     }
   }
@@ -508,7 +522,9 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                 tooltip: 'Voltar para playlist',
               )
             : const BackButtonWithDrawerOnLongPress(),
-        title: Text(widget.materialName ?? 'Letra'),
+        title: AppBarTitleWithLogo(
+          title: Text(widget.materialName ?? 'Letra'),
+        ),
         actions: [
           // Botão próximo material quando vindo de sala
           if (widget.salaId != null && widget.participanteId != null && widget.materialIndex != null)
@@ -561,15 +577,15 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                     )
                   : Column(
                       children: [
-                        // Controles superiores
+                        // Controles superiores (fundo vermelho padrão, botões dourados)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: const Color(0xFF4B2D2B),
                             border: Border(
                               bottom: BorderSide(
-                                color: _dividerColor,
-                                width: 1,
+                                color: const Color(0xFFD4AF37),
+                                width: 2,
                               ),
                             ),
                           ),
@@ -584,21 +600,33 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                                     icon: const Icon(Icons.remove),
                                     onPressed: _decreaseFontSize,
                                     tooltip: 'Diminuir fonte',
-                                    color: _fontSize <= 12.0 ? Colors.grey : null,
+                                    color: _fontSize <= 12.0 ? Colors.grey : const Color(0xFFD4AF37),
                                   ),
-                                  SizedBox(
-                                    width: 50,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF5E6D3),
+                                      border: Border.all(
+                                        color: const Color(0xFFD4AF37),
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                     child: Text(
                                       '${_fontSize.toInt()}',
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF5A2A2A),
+                                        fontSize: 16,
+                                      ),
                                     ),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.add),
                                     onPressed: _increaseFontSize,
                                     tooltip: 'Aumentar fonte',
-                                    color: _fontSize >= 48.0 ? Colors.grey : null,
+                                    color: _fontSize >= 48.0 ? Colors.grey : const Color(0xFFD4AF37),
                                   ),
                                 ],
                               ),
@@ -607,24 +635,18 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                                 icon: Icon(_isDarkMode ? Icons.nightlight_round : Icons.wb_sunny),
                                 onPressed: _toggleTheme,
                                 tooltip: _isDarkMode ? 'Modo escuro' : 'Modo claro',
+                                color: const Color(0xFFD4AF37),
                               ),
-                              // Seletor de modo de scroll (direita)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.swap_vert),
-                                    onPressed: _isVerticalScroll ? null : _toggleScrollMode,
-                                    tooltip: 'Vertical',
-                                    color: _isVerticalScroll ? Theme.of(context).primaryColor : Colors.grey,
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.swap_horiz),
-                                    onPressed: _isVerticalScroll ? _toggleScrollMode : null,
-                                    tooltip: 'Horizontal',
-                                    color: !_isVerticalScroll ? Theme.of(context).primaryColor : Colors.grey,
-                                  ),
-                                ],
+                              // Botão único que alterna entre modo vertical e horizontal
+                              IconButton(
+                                icon: Icon(
+                                  _isVerticalScroll ? Icons.swap_vert : Icons.swap_horiz,
+                                ),
+                                onPressed: _toggleScrollMode,
+                                tooltip: _isVerticalScroll
+                                    ? 'Alternar para modo horizontal'
+                                    : 'Alternar para modo vertical',
+                                color: const Color(0xFFD4AF37),
                               ),
                             ],
                           ),
@@ -668,36 +690,67 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                                   },
                                 ),
                         ),
-                        // Controles inferiores de navegação
+                        // Controles inferiores (fundo vermelho padrão, borda e botões dourados)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: const Color(0xFF4B2D2B),
                             border: Border(
                               top: BorderSide(
-                                color: _dividerColor,
-                                width: 1,
+                                color: const Color(0xFFD4AF37),
+                                width: 2,
                               ),
                             ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ElevatedButton.icon(
+                              OutlinedButton.icon(
                                 onPressed: _currentPage > 0 ? _previousPage : null,
                                 icon: const Icon(Icons.chevron_left),
                                 label: const Text('Anterior'),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: _currentPage > 0
+                                        ? const Color(0xFFD4AF37)
+                                        : Colors.grey,
+                                  ),
+                                  foregroundColor: const Color(0xFFD4AF37),
+                                ),
                               ),
                               const SizedBox(width: 16),
-                              Text(
-                                'Página ${_currentPage + 1} de ${_pages.length}',
-                                style: const TextStyle(fontSize: 14),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5E6D3),
+                                  border: Border.all(
+                                    color: const Color(0xFFD4AF37),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Página ${_currentPage + 1} de ${_pages.length}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF5A2A2A),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 16),
-                              ElevatedButton.icon(
+                              OutlinedButton.icon(
                                 onPressed: _currentPage < _pages.length - 1 ? _nextPage : null,
                                 icon: const Icon(Icons.chevron_right),
                                 label: const Text('Próxima'),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: _currentPage < _pages.length - 1
+                                        ? const Color(0xFFD4AF37)
+                                        : Colors.grey,
+                                  ),
+                                  foregroundColor: const Color(0xFFD4AF37),
+                                ),
                               ),
                             ],
                           ),

@@ -139,9 +139,17 @@ class PraiseRepository {
     await localDataSource.clearCache();
   }
 
-  /// Lista todas as tags de praise (sempre da API)
-  Future<List<PraiseTag>> getPraiseTags() async {
+  /// Lista todas as tags de praise (cache frio: usa cache 24h, depois API)
+  Future<List<PraiseTag>> getPraiseTags({bool forceRefresh = false}) async {
+    if (!forceRefresh && localDataSource.isPraiseTagsCacheValid()) {
+      final cached = localDataSource.getCachedPraiseTags();
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
+      }
+    }
     final dtos = await remoteDataSource.getPraiseTags();
-    return dtos.map((dto) => dto.toDomain()).toList();
+    final tags = dtos.map((dto) => dto.toDomain()).toList();
+    await localDataSource.cachePraiseTags(tags);
+    return tags;
   }
 }

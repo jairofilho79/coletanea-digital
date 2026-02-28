@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
@@ -113,7 +114,7 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                       tooltip: 'Menu',
                     )
                   : null,
-              title: const Text('Sala'),
+              title: AppBarTitleWithLogo.text('Sala'),
             ),
             body: const Center(child: Text('Sala não encontrada')),
           );
@@ -135,7 +136,7 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                     tooltip: 'Menu',
                   )
                 : null,
-            title: const Text('Detalhes da Sala'),
+            title: AppBarTitleWithLogo.text('Detalhes da Sala'),
             actions: [
               IconButton(
                 icon: Icon(sala.isFavorite ? Icons.star : Icons.star_border),
@@ -147,14 +148,39 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                 },
                 tooltip: 'Favorito',
               ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (v) {
-                  if (v == 'delete') _delete(sala);
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(value: 'delete', child: Text('Excluir sala')),
-                ],
+              Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: const Color(0xFFD4AF37),
+                  dividerTheme: const DividerThemeData(
+                    color: Color(0xFFD4AF37),
+                    thickness: 1,
+                    space: 0,
+                  ),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  color: const Color(0xFF4B2D2B),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 2,
+                    ),
+                  ),
+                  onSelected: (v) {
+                    if (v == 'delete') _delete(sala);
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text(
+                        'Excluir sala',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const PopupMenuDivider(height: 1),
+                  ],
+                ),
               ),
             ],
             bottom: TabBar(
@@ -178,7 +204,7 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Sala')),
+        appBar: AppBar(title: AppBarTitleWithLogo.text('Sala')),
         body: Center(child: Text('Erro: $e')),
       ),
     );
@@ -194,9 +220,37 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
             children: [
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  border: OutlineInputBorder(),
+                style: const TextStyle(
+                  color: Color(0xFF1A1A1A), // Texto preto ao digitar
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Ex: Culto de domingo',
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5E6D3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 2,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFF4D03F),
+                      width: 2,
+                    ),
+                  ),
                 ),
                 onChanged: (_) => _nameDirty = true,
                 onSubmitted: (_) => _saveName(sala),
@@ -204,9 +258,37 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
               const SizedBox(height: 12),
               TextField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descrição',
-                  border: OutlineInputBorder(),
+                style: const TextStyle(
+                  color: Color(0xFF1A1A1A), // Texto preto ao digitar
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Lista de glorificação no dia 12/03/2017 para o casamento de...',
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5E6D3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 2,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFF4D03F),
+                      width: 2,
+                    ),
+                  ),
                 ),
                 maxLines: 2,
                 onChanged: (_) => _descriptionDirty = true,
@@ -299,6 +381,7 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
           child: ReorderablePraiseList(
             items: sala.praises,
             emptyMessage: 'Nenhum louvor na sala.',
+            emptyInstruction: 'Toque no botão abaixo para adicionar louvores.',
             emptyActionLabel: 'Adicionar louvores',
             onEmptyActionPressed: () => context.push('/praises?addToSala=${sala.id}'),
             onReorder: (oldIndex, newIndex) async {
@@ -323,6 +406,30 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
     );
   }
 
+  static IconData _getTipoMaterialIcon(String tipoMaterial) {
+    switch (tipoMaterial.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'audio':
+        return Icons.audiotrack;
+      case 'lyrics':
+      default:
+        return Icons.text_snippet;
+    }
+  }
+
+  static String _getTipoMaterialLabel(String tipoMaterial) {
+    switch (tipoMaterial.toLowerCase()) {
+      case 'pdf':
+        return 'PDF';
+      case 'audio':
+        return 'Áudio';
+      case 'lyrics':
+      default:
+        return 'Letra';
+    }
+  }
+
   Widget _buildPlaylistTab(BuildContext context, Sala sala) {
     final playlistAsync = ref.watch(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
     // Garante que as traduções foram carregadas (para materiais antigos ou mudanças de idioma)
@@ -334,13 +441,27 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
         if (materiais.isEmpty) {
           return Center(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Nenhum material na playlist.'),
+                Icon(
+                  Icons.playlist_play,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nenhum material na playlist.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.grey[400],
+                      ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Adicione materiais clicando neles na tela de detalhes do louvor.',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[400],
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -353,59 +474,150 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
           itemCount: materiais.length,
           itemBuilder: (context, index) {
             final material = materiais[index];
-            final showDivider = index > 0 &&
+            final showDivider = index == 0 ||
                 materiais[index - 1].praiseId != material.praiseId;
 
             return Column(
               children: [
                 if (showDivider)
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Colors.amber.shade700,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            height: 1,
+                            thickness: 2,
+                            color: const Color(0xFFD4AF37),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            material.nomePraise,
+                            style: const TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            height: 1,
+                            thickness: 2,
+                            color: const Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 Builder(
                   builder: (context) {
-                    // Usa tradução atualizada se materialKindId disponível, senão usa nomeMaterial salvo
                     final materialName = material.materialKindId.isNotEmpty
                         ? translationService.getMaterialKindName(
                             material.materialKindId,
                             material.nomeMaterial,
                           )
                         : material.nomeMaterial;
-                    final displayName = '$materialName - ${material.nomePraise}';
-                    
-                    return ListTile(
-                      title: Text(displayName),
-                      subtitle: Text('Tipo: ${material.tipoMaterial}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () async {
-                      final participanteId = await ref.read(participanteIdProvider.future);
-                      await ref
-                          .read(playlistMateriaisRepositoryProvider)
-                          .removeMaterial(sala.id, participanteId, material.materialId);
-                      ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
-                    },
-                    tooltip: 'Remover',
-                  ),
-                  onTap: () async {
-                    final participanteId = await ref.read(participanteIdProvider.future);
-                    final materialPath = ''; // TODO: obter path do material
-                    if (material.tipoMaterial == 'pdf') {
-                      if (context.mounted) {
-                        context.push(
-                          '/reader/pdf/${material.materialId}?path=$materialPath&name=${material.nomeMaterial}&salaId=${sala.id}&participanteId=$participanteId&materialIndex=$index',
-                        );
-                      }
-                    } else if (material.tipoMaterial == 'lyrics') {
-                      if (context.mounted) {
-                        context.push(
-                          '/reader/lyrics/${material.materialId}?path=$materialPath&name=${material.nomeMaterial}&salaId=${sala.id}&participanteId=$participanteId&materialIndex=$index',
-                        );
-                      }
-                    }
-                  },
+                    final tipoIcon = _getTipoMaterialIcon(material.tipoMaterial);
+                    final tipoLabel = _getTipoMaterialLabel(material.tipoMaterial);
+
+                    return Container(
+                      margin: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5E6D3),
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
+                            final participanteId = await ref.read(participanteIdProvider.future);
+                            final materialPath = '';
+                            if (material.tipoMaterial == 'pdf') {
+                              if (context.mounted) {
+                                context.push(
+                                  '/reader/pdf/${material.materialId}?path=$materialPath&name=${material.nomeMaterial}&salaId=${sala.id}&participanteId=$participanteId&materialIndex=$index',
+                                );
+                              }
+                            } else if (material.tipoMaterial == 'lyrics') {
+                              if (context.mounted) {
+                                context.push(
+                                  '/reader/lyrics/${material.materialId}?path=$materialPath&name=${material.nomeMaterial}&salaId=${sala.id}&participanteId=$participanteId&materialIndex=$index',
+                                );
+                              }
+                            } else if (material.tipoMaterial == 'audio') {
+                              if (context.mounted) {
+                                context.push(
+                                  '/reader/audio/${material.materialId}?path=$materialPath&name=${material.nomeMaterial}&salaId=${sala.id}&participanteId=$participanteId&materialIndex=$index',
+                                );
+                              }
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        materialName,
+                                        style: const TextStyle(
+                                          color: Color(0xFF5A2A2A),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            tipoIcon,
+                                            size: 18,
+                                            color: const Color(0xFFD4AF37),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            tipoLabel,
+                                            style: const TextStyle(
+                                              color: Color(0xFF5A5A5A),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                  color: const Color(0xFFD4AF37),
+                                  onPressed: () async {
+                                    final participanteId = await ref.read(participanteIdProvider.future);
+                                    await ref
+                                        .read(playlistMateriaisRepositoryProvider)
+                                        .removeMaterial(sala.id, participanteId, material.materialId);
+                                    ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
+                                  },
+                                  tooltip: 'Remover',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -444,19 +656,36 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Importar lista'),
+          backgroundColor: const Color(0xFF4B2D2B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(
+              color: Color(0xFFD4AF37),
+              width: 2,
+            ),
+          ),
+          title: const Text(
+            'Importar lista',
+            style: TextStyle(
+              color: Color(0xFFD4AF37),
+              fontFamily: 'EB Garamond',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: Consumer(
               builder: (context, ref, _) {
-                // Usa watch dentro do dialog para garantir dados atualizados
                 final listasAsync = ref.watch(listasProvider);
                 return listasAsync.when(
                   data: (listasData) {
                     if (listasData.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('Nenhuma lista disponível para importar'),
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Nenhuma lista disponível para importar',
+                          style: TextStyle(color: Colors.grey[400]),
+                        ),
                       );
                     }
                     return ListView.builder(
@@ -464,23 +693,73 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                       itemCount: listasData.length,
                       itemBuilder: (context, index) {
                         final lista = listasData[index];
-                        return ListTile(
-                          leading: const Icon(Icons.list),
-                          title: Text(lista.name),
-                          subtitle: Text('${lista.praises.length} louvor(es)'),
-                          onTap: () async {
-                            await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
-                            ref.invalidate(salaProvider(widget.salaId));
-                            ref.invalidate(salasProvider);
-                            if (ctx.mounted) {
-                              Navigator.of(ctx).pop();
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('${lista.praises.length} louvor(es) importado(s)'),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5E6D3),
+                            border: Border.all(
+                              color: const Color(0xFFD4AF37),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
+                                ref.invalidate(salaProvider(widget.salaId));
+                                ref.invalidate(salasProvider);
+                                if (ctx.mounted) {
+                                  Navigator.of(ctx).pop();
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    SnackBar(
+                                      content: Text('${lista.praises.length} louvor(es) importado(s)'),
+                                    ),
+                                  );
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
                                 ),
-                              );
-                            }
-                          },
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.list,
+                                      color: const Color(0xFFD4AF37),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            lista.name,
+                                            style: const TextStyle(
+                                              color: Color(0xFF5A2A2A),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${lista.praises.length} louvor(es)',
+                                            style: const TextStyle(
+                                              color: Color(0xFF5A5A5A),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         );
                       },
                     );
@@ -493,7 +772,10 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                   ),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Erro ao carregar listas: $e'),
+                    child: Text(
+                      'Erro ao carregar listas: $e',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
                   ),
                 );
               },
@@ -502,7 +784,10 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Fechar'),
+              child: const Text(
+                'Fechar',
+                style: TextStyle(color: Color(0xFFD4AF37)),
+              ),
             ),
           ],
         ),
@@ -638,23 +923,95 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Nova Lista'),
+        backgroundColor: const Color(0xFF4B2D2B), // Fundo vermelho (marrom avermelhado escuro)
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFFD4AF37), // Borda dourada
+            width: 2,
+          ),
+        ),
+        title: const Text(
+          'Nova Lista',
+          style: TextStyle(
+            color: Color(0xFFD4AF37), // Texto dourado no título
+            fontFamily: 'EB Garamond',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nome da lista',
+              style: const TextStyle(
+                color: Color(0xFF1A1A1A), // Texto preto ao digitar
+              ),
+              decoration: InputDecoration(
                 hintText: 'Ex: Louvores de domingo',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFD4AF37), // Borda dourada
+                    width: 2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFD4AF37), // Borda dourada
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
+                    width: 2,
+                  ),
+                ),
               ),
               autofocus: true,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Descrição (opcional)',
+              style: const TextStyle(
+                color: Color(0xFF1A1A1A), // Texto preto ao digitar
+              ),
+              decoration: InputDecoration(
+                hintText: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFD4AF37), // Borda dourada
+                    width: 2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFD4AF37), // Borda dourada
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
+                    width: 2,
+                  ),
+                ),
               ),
               maxLines: 2,
             ),
@@ -663,7 +1020,12 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Color(0xFFD4AF37), // Texto dourado
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
