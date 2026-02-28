@@ -18,7 +18,7 @@ class AppConfig {
     // Fallback baseado no ambiente
     return isDevelopment 
         ? 'http://localhost:8000'
-        : 'https://api-coldigom.seu-dominio.com'; // Configure em produção
+        : 'http://129.121.44.196';
   }
 
   static String get coletaneaApiBaseUrl {
@@ -31,7 +31,7 @@ class AppConfig {
     // Fallback baseado no ambiente
     return isDevelopment 
         ? 'http://localhost:8001'
-        : 'https://api-coletanea.seu-dominio.com'; // Configure em produção
+        : 'http://129.121.44.196:8001';
   }
 
   // App Configuration

@@ -16,7 +16,7 @@ services:
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coletanea_user} -d ${POSTGRES_DB:-coletanea_db}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coletanea_user} -d ${POSTGRES_DB:-coletanea_db}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,12 +45,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh scripts/wait-for-db.sh db "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001"
+    command: sh scripts/wait-for-db.sh db sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001"
     networks:
       - coldigom-coletanea-prod-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8001/health || exit 1"]
+      test: [ "CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -58,6 +58,7 @@ services:
 
 volumes:
   postgres_data_prod:
+
 
 networks:
   coldigom-coletanea-prod-network:
