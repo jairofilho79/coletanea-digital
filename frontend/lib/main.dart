@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/storage/hive_service.dart';
@@ -11,6 +12,13 @@ void main() async {
   
   // Initialize Hive
   await Hive.initFlutter();
+  
+  // Initialize background audio
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.coletaneadigital.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
   
   // Initialize Hive boxes
   await HiveService.init();

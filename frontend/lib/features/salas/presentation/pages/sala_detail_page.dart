@@ -9,6 +9,9 @@ import '../../../listas/presentation/widgets/reorderable_praise_list.dart';
 import '../../../listas/domain/entities/lista.dart';
 import '../../../praises/presentation/providers/translation_providers.dart';
 import '../../domain/entities/sala.dart';
+import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
+import 'package:flutter_client_sse/flutter_client_sse.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Página de detalhes de uma sala com tabs (Louvores e Playlist)
 class SalaDetailPage extends ConsumerStatefulWidget {
@@ -30,15 +33,44 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
   final _descriptionController = TextEditingController();
   bool _nameDirty = false;
   bool _descriptionDirty = false;
+  bool _isListeningSse = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _startSseListening();
+  }
+
+  void _startSseListening() {
+    if (_isListeningSse) return;
+    _isListeningSse = true;
+    
+    final url = '${AppConfig.coldigomApiBaseUrl}/api/v1/rooms/${widget.salaId}/events';
+    
+    SSEClient.subscribeToSSE(
+      method: SSERequestType.GET,
+      url: url,
+      header: {
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      }
+    ).listen((event) {
+      if (!mounted) return;
+      if (event.event == "room_updated" || (event.data?.contains("sync_requested") == true)) {
+        ref.invalidate(salaProvider(widget.salaId));
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text('Sala atualizada pelo Mestre! Recarregando...')),
+        );
+      }
+    }, onError: (e) {
+      // Ignorar erros de timeout longos do SSE provisoriamente
+    });
   }
 
   @override
   void dispose() {
+    SSEClient.unsubscribeFromSSE();
     _tabController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
@@ -825,9 +857,8 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
       ref.invalidate(salaProvider(widget.salaId));
       ref.invalidate(salasProvider);
       ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
-      // Força refresh imediato para garantir que o estado está atualizado
-      ref.refresh(salaProvider(widget.salaId));
-      if (mounted) {
+      
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Lista de louvores limpa')),
         );

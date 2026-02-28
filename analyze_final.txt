@@ -1,0 +1,81 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 91.0.0 (97.0.0 available)
+  analyzer 8.4.1 (11.0.0 available)
+  audio_session 0.1.25 (0.2.2 available)
+  characters 1.4.0 (1.4.1 available)
+  connectivity_plus 6.1.5 (7.0.0 available)
+  google_fonts 6.3.3 (8.0.2 available)
+  image 4.7.2 (4.8.0 available)
+  just_audio 0.9.46 (0.10.5 available)
+  matcher 0.12.17 (0.12.19 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.17.0 (1.18.1 available)
+  posix 6.0.3 (6.5.0 available)
+  test 1.26.3 (1.30.0 available)
+  test_api 0.7.7 (0.7.10 available)
+  test_core 0.6.12 (0.6.16 available)
+  uuid 4.5.2 (4.5.3 available)
+Got dependencies!
+16 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing frontend...                                           
+
+warning • The '!' will have no effect because the receiver can't be null • lib/core/network/api_client.dart:130:33 • unnecessary_non_null_assertion
+   info • Statements in an if should be enclosed in a block • lib/core/offline/offline_material_service.dart:350:33 • curly_braces_in_flow_control_structures
+   info • The imported package 'path' isn't a dependency of the importing package • lib/core/storage/material_cache_service.dart:4:8 • depend_on_referenced_packages
+warning • Unused import: '../config/app_config.dart' • lib/core/widgets/app_shell.dart:7:8 • unused_import
+   info • Use 'const' with the constructor to improve performance • lib/core/widgets/app_shell.dart:143:36 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/core/widgets/app_shell.dart:146:42 • prefer_const_constructors
+warning • Unused import: '../locale/locale_service.dart' • lib/core/widgets/language_selector.dart:4:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/light_beam.dart:42:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/light_beam.dart:47:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/light_beam.dart:52:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/light_beam.dart:57:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/light_beam.dart:62:46 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/features/listas/presentation/pages/lista_detail_page.dart:309:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/listas/presentation/pages/listas_page.dart:79:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/listas/presentation/widgets/reorderable_praise_list.dart:137:26 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/listas/presentation/widgets/reorderable_praise_list.dart:139:28 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/offline/presentation/pages/offline_page.dart:191:13 • prefer_const_constructors
+   info • The 'child' argument should be last in widget constructor invocations • lib/features/offline/presentation/pages/offline_page.dart:511:25 • sort_child_properties_last
+warning • Unused import: '../../../../core/storage/providers.dart' • lib/features/offline/presentation/providers/offline_providers.dart:4:8 • unused_import
+   info • Dangling library doc comment • lib/features/praises/data/models/translation_dto.dart:1:1 • dangling_library_doc_comments
+   info • Use 'const' with the constructor to improve performance • lib/features/praises/presentation/pages/praise_detail_page.dart:742:15 • prefer_const_constructors
+warning • Unused import: '../../../../core/storage/providers.dart' • lib/features/praises/presentation/providers/translation_providers.dart:6:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/praises/presentation/widgets/praise_search_bar.dart:102:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/praises/presentation/widgets/praise_search_bar.dart:107:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/praises/presentation/widgets/praise_search_bar.dart:112:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/praises/presentation/widgets/praise_search_bar.dart:117:64 • deprecated_member_use
+warning • Unused import: '../../data/services/material_content_service.dart' • lib/features/reader/presentation/pages/lyrics_reader_page.dart:12:8 • unused_import
+   info • The private field _pageOffsets could be 'final' • lib/features/reader/presentation/pages/lyrics_reader_page.dart:73:16 • prefer_final_fields
+   info • Unnecessary use of 'toList' in a spread • lib/features/reader/presentation/pages/lyrics_reader_page.dart:496:20 • unnecessary_to_list_in_spreads
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:583:39 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:585:37 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:586:39 • prefer_const_constructors
+   info • Unnecessary use of 'toList' in a spread • lib/features/reader/presentation/pages/lyrics_reader_page.dart:676:42 • unnecessary_to_list_in_spreads
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:696:39 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:698:37 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/reader/presentation/pages/lyrics_reader_page.dart:699:36 • prefer_const_constructors
+   info • The 'child' argument should be last in widget constructor invocations • lib/features/reader/presentation/pages/lyrics_reader_page.dart:764:15 • sort_child_properties_last
+   info • Don't use 'BuildContext's across async gaps • lib/features/reader/presentation/pages/lyrics_reader_page.dart:801:7 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/features/reader/presentation/pages/lyrics_reader_page.dart:805:7 • use_build_context_synchronously
+   info • The 'child' argument should be last in widget constructor invocations • lib/features/reader/presentation/pages/pdf_reader_page.dart:298:15 • sort_child_properties_last
+   info • Don't use 'BuildContext's across async gaps • lib/features/reader/presentation/pages/pdf_reader_page.dart:335:7 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/features/reader/presentation/pages/pdf_reader_page.dart:339:7 • use_build_context_synchronously
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:55:9 • prefer_single_quotes
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:55:19 • prefer_single_quotes
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:56:9 • prefer_single_quotes
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:56:26 • prefer_single_quotes
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:60:26 • prefer_single_quotes
+   info • Unnecessary use of double quotes • lib/features/salas/presentation/pages/sala_detail_page.dart:60:66 • prefer_single_quotes
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/sala_detail_page.dart:519:25 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/sala_detail_page.dart:520:34 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/sala_detail_page.dart:537:25 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/sala_detail_page.dart:538:34 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/sala_detail_page.dart:762:37 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/pages/salas_page.dart:79:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/salas/presentation/widgets/sala_card.dart:67:23 • prefer_const_constructors
+warning • Unused import: 'package:flutter/material.dart' • test/widget_test.dart:8:8 • unused_import
+warning • Duplicate import • test/widget_test.dart:11:8 • duplicate_import
+

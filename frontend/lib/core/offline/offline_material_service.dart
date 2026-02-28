@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'package:dio/dio.dart';
+import 'package:archive/archive.dart';
 import '../config/app_config.dart';
 import '../storage/material_cache_service.dart';
 import 'offline_download_progress.dart';
@@ -51,6 +53,8 @@ class OfflineMaterialService {
     int completed = 0;
     int failed = 0;
     int skipped = 0;
+    int textsCompleted = 0;
+    int textsFailed = 0;
 
     final list = await _fetchBatchList(
       materialKindId,
@@ -58,12 +62,12 @@ class OfflineMaterialService {
       cancelToken: cancelToken,
     );
     if (list.isEmpty) {
-      onProgress?.call(OfflineDownloadProgress(
+      onProgress?.call(const OfflineDownloadProgress(
         completed: 0,
         total: 0,
         message: 'Nenhum material encontrado para este tipo.',
       ));
-      return OfflineDownloadResult(
+      return const OfflineDownloadResult(
         completed: 0,
         failed: 0,
         skipped: 0,
@@ -71,51 +75,164 @@ class OfflineMaterialService {
       );
     }
 
-    final toDownload = <_BatchMaterialItem>[];
+    final toDownloadTexts = <_BatchMaterialItem>[];
+    final toDownloadFiles = <_BatchMaterialItem>[];
+
     for (final item in list) {
       if (cancelToken?.isCancelled == true) break;
       if (_cache.isMaterialCached(item.id) || _cache.isMaterialTextCached(item.id)) {
         skipped++;
         continue;
       }
-      toDownload.add(item);
+      if (_isTextType(item.materialTypeName, item.path)) {
+        toDownloadTexts.add(item);
+      } else {
+        toDownloadFiles.add(item);
+      }
     }
 
-    final total = toDownload.length + skipped;
-    void report() {
+    final totalTexts = toDownloadTexts.length;
+    final totalFiles = toDownloadFiles.length;
+    final totalToProcess = totalTexts + totalFiles;
+
+    void reportProgress() {
       onProgress?.call(OfflineDownloadProgress(
-        completed: completed,
-        total: total,
-        failed: failed,
+        completed: textsCompleted,
+        total: totalToProcess + skipped,
+        failed: textsFailed,
         skipped: skipped,
-        message: 'Baixando ${completed + failed + 1} de $total...',
+        message: 'Baixando textos ${textsCompleted + textsFailed + 1} de $totalTexts...',
       ));
     }
 
-    for (var i = 0; i < toDownload.length; i += maxConcurrent) {
+    // Baixa os textos primeiramente (são requisições JSON bem leves)
+    for (var i = 0; i < totalTexts; i += maxConcurrent) {
       if (cancelToken?.isCancelled == true) break;
-      final chunk = toDownload.skip(i).take(maxConcurrent).toList();
+      final chunk = toDownloadTexts.skip(i).take(maxConcurrent).toList();
       final results = await Future.wait(
-        chunk.map((item) => _downloadOne(
-          item,
-          materialKindId,
-          materialKindName,
-          cancelToken: cancelToken,
-        )),
+        chunk.map((item) => _downloadText(
+              item,
+              materialKindId,
+              materialKindName,
+              cancelToken: cancelToken,
+            )),
       );
       for (var j = 0; j < results.length; j++) {
-        if (results[j] == true) completed++;
-        else {
-          failed++;
-          errors.add('Material ${chunk[j].id}');
+        if (results[j] == true) {
+          textsCompleted++;
+        } else {
+          textsFailed++;
+          errors.add('Material de texto ${chunk[j].id} falhou.');
         }
       }
-      report();
+      reportProgress();
+    }
+
+    completed += textsCompleted;
+    failed += textsFailed;
+
+    // Baixa os arquivos pesados via ZIP se houver
+    if (totalFiles > 0 && cancelToken?.isCancelled != true) {
+      if (!await _cache.hasSpaceFor(estimatedMaxFileBytes * totalFiles)) {
+         errors.add('Espaço insuficiente para baixar $totalFiles arquivos.');
+         failed += totalFiles;
+      } else {
+        try {
+          final path = '/api/v1/praises/download-by-material-kind';
+          final response = await _dio.get<List<int>>(
+            path,
+            queryParameters: {'material_kind_id': materialKindId},
+            options: Options(
+              responseType: ResponseType.bytes,
+              receiveTimeout: const Duration(minutes: 5),
+            ),
+            cancelToken: cancelToken,
+            onReceiveProgress: (count, total) {
+              int reportedTotal = total;
+              if (reportedTotal == -1) reportedTotal = totalFiles * estimatedMaxFileBytes; // estimativa longa
+              onProgress?.call(OfflineDownloadProgress(
+                completed: textsCompleted,
+                total: totalToProcess + skipped,
+                failed: textsFailed,
+                skipped: skipped,
+                bytesDownloaded: count,
+                message: 'Baixando master ZIP de mídias... ${(count / 1024 / 1024).toStringAsFixed(1)} MB',
+              ));
+            },
+          );
+
+          final bytes = response.data;
+          if (bytes != null && bytes.isNotEmpty) {
+            onProgress?.call(OfflineDownloadProgress(
+              completed: textsCompleted,
+              total: totalToProcess + skipped,
+              failed: textsFailed,
+              skipped: skipped,
+              bytesDownloaded: bytes.length,
+              message: 'Descompactando mídias extraídas internamente (Isolate)...',
+            ));
+
+            // Movemos a extração das pastas ZIP e SUB-ZIP para uma Thread Separada (Isolate)
+            final extractedFiles = await Isolate.run(() {
+              final archive = ZipDecoder().decodeBytes(bytes);
+              final result = <String, List<int>>{};
+              
+              for (final file in archive) {
+                // Arquivos zipados divididos em chunk part_xxx.zip virão do backend.
+                if (file.isFile && file.name.endsWith('.zip')) {
+                  final innerArchive = ZipDecoder().decodeBytes(file.content as List<int>);
+                  for (final innerFile in innerArchive) {
+                    if (innerFile.isFile) {
+                      result[innerFile.name] = innerFile.content as List<int>;
+                    }
+                  }
+                }
+              }
+              return result;
+            });
+
+            // Salvando arquivos extraídos na Hive/Storage
+            int filesExtracted = 0;
+            for (final entry in extractedFiles.entries) {
+              final parts = entry.key.split('/');
+              if (parts.isEmpty) continue;
+              
+              final fileName = parts.last;
+              final dotIndex = fileName.lastIndexOf('.');
+              if (dotIndex == -1) continue;
+
+              final materialId = fileName.substring(0, dotIndex);
+              final ext = fileName.substring(dotIndex + 1);
+
+              await _cache.cacheMaterial(
+                materialId: materialId,
+                extension: ext,
+                data: entry.value,
+                materialKindId: materialKindId,
+                materialKindName: materialKindName,
+              );
+              filesExtracted++;
+            }
+
+            completed += filesExtracted;
+            if (filesExtracted < totalFiles) {
+              failed += totalFiles - filesExtracted;
+              errors.add('Apenas $filesExtracted de $totalFiles mídias foram encontradas no ZIP.');
+            }
+          } else {
+            failed += totalFiles;
+            errors.add('Nenhum dado recebido do ZIP.');
+          }
+        } catch (e) {
+          failed += totalFiles;
+          errors.add('Erro na conversão/download do ZIP: $e');
+        }
+      }
     }
 
     onProgress?.call(OfflineDownloadProgress(
       completed: completed,
-      total: total,
+      total: totalToProcess + skipped,
       failed: failed,
       skipped: skipped,
       message: null,
@@ -125,7 +242,7 @@ class OfflineMaterialService {
       completed: completed,
       failed: failed,
       skipped: skipped,
-      total: total,
+      total: totalToProcess + skipped,
       errors: errors,
     );
   }
@@ -175,77 +292,7 @@ class OfflineMaterialService {
     return list;
   }
 
-  /// Retorna true se salvou, false se falhou (após retries)
-  Future<bool> _downloadOne(
-    _BatchMaterialItem item,
-    String materialKindId,
-    String materialKindName, {
-    CancelToken? cancelToken,
-  }) async {
-    final isText = _isTextType(item.materialTypeName, item.path);
-    if (isText) {
-      return _downloadText(item, materialKindId, materialKindName, cancelToken: cancelToken);
-    }
-    return _downloadFile(item, materialKindId, materialKindName, cancelToken: cancelToken);
-  }
 
-  bool _isTextType(String typeName, String path) {
-    if (typeName.contains('text') || typeName.contains('lyric')) return true;
-    if (path.length > 100 &&
-        !path.contains('.pdf') &&
-        !path.contains('.mp3') &&
-        !path.contains('/') &&
-        !path.contains('http')) return true;
-    return false;
-  }
-
-  String _extensionForType(String typeName, String path) {
-    if (typeName.contains('pdf')) return 'pdf';
-    if (typeName.contains('audio') || path.endsWith('.mp3') || path.endsWith('.m4a')) return 'mp3';
-    return 'pdf';
-  }
-
-  Future<bool> _downloadFile(
-    _BatchMaterialItem item,
-    String materialKindId,
-    String materialKindName, {
-    CancelToken? cancelToken,
-  }) async {
-    if (!await _cache.hasSpaceFor(estimatedMaxFileBytes)) return false;
-    final path = '/api/v1/praise-materials/${item.id}/download';
-    for (var attempt = 0; attempt < maxRetries; attempt++) {
-      if (cancelToken?.isCancelled == true) return false;
-      try {
-        await Future.delayed(Duration(milliseconds: attempt == 0 ? 150 : (1 << attempt) * 500));
-        final response = await _dio.get<List<int>>(
-          path,
-          options: Options(responseType: ResponseType.bytes),
-          cancelToken: cancelToken,
-        );
-        if (response.data == null || response.data!.isEmpty) return false;
-        final ext = _extensionForType(item.materialTypeName, item.path);
-        await _cache.cacheMaterial(
-          materialId: item.id,
-          extension: ext,
-          data: response.data!,
-          materialKindId: materialKindId,
-          materialKindName: materialKindName,
-        );
-        return true;
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 429) {
-          final retryAfterStr = e.response?.headers.value('retry-after');
-          final sec = int.tryParse(retryAfterStr ?? '60') ?? 60;
-          await Future.delayed(Duration(seconds: sec));
-          if (attempt < maxRetries - 1) continue;
-        }
-        if (attempt == maxRetries - 1) return false;
-      } catch (_) {
-        if (attempt == maxRetries - 1) return false;
-      }
-    }
-    return false;
-  }
 
   Future<bool> _downloadText(
     _BatchMaterialItem item,
@@ -291,6 +338,16 @@ class OfflineMaterialService {
         if (attempt == maxRetries - 1) return false;
       }
     }
+    return false;
+  }
+
+  bool _isTextType(String typeName, String path) {
+    if (typeName.contains('text') || typeName.contains('lyric')) return true;
+    if (path.length > 100 &&
+        !path.contains('.pdf') &&
+        !path.contains('.mp3') &&
+        !path.contains('/') &&
+        !path.contains('http')) return true;
     return false;
   }
 }

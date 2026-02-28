@@ -55,6 +55,9 @@ dependencies:
   
   # SVG Support
   flutter_svg: ^2.0.10+1
+  just_audio_background: ^0.0.1-beta.17
+  archive: ^4.0.9
+  flutter_client_sse: ^2.0.3
 
 dev_dependencies:
   flutter_test:

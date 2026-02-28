@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import '../config/app_config.dart';
 import '../storage/providers.dart';
 import 'global_audio_state.dart';
@@ -101,7 +102,16 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
         final cacheService = ref.read(materialCacheServiceProvider);
         final cached = cacheService.getCachedMaterial(materialId);
         if (cached != null && await cached.exists()) {
-          await player.setFilePath(cached.path);
+          await player.setAudioSource(
+            AudioSource.uri(
+              Uri.file(cached.path),
+              tag: MediaItem(
+                id: materialId,
+                album: praiseName ?? materialKindName ?? 'Coletânea Digital',
+                title: displayName,
+              ),
+            ),
+          );
           updateState(isLoading: false);
           await player.play();
           return;
@@ -109,7 +119,16 @@ class GlobalAudioPlayerNotifier extends Notifier<GlobalAudioState> {
       }
 
       final url = _buildDownloadUrl(materialId);
-      await player.setUrl(url);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: materialId,
+            album: praiseName ?? materialKindName ?? 'Coletânea Digital',
+            title: displayName,
+          ),
+        ),
+      );
       updateState(isLoading: false);
       await player.play();
     } catch (e) {

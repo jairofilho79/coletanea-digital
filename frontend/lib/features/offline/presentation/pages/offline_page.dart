@@ -84,7 +84,7 @@ class _DownloadDialogContentState extends State<_DownloadDialogContent> {
         Expanded(
           child: Text(
             _progress != null
-                ? 'Baixando ${_progress!.completed} de ${_progress!.total}...'
+                ? (_progress!.message ?? 'Baixando ${_progress!.completed} de ${_progress!.total}...')
                 : 'Baixando... Toque em Cancelar para parar.',
             style: const TextStyle(color: AppTheme.textColor),
           ),

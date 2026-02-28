@@ -70,6 +70,7 @@ docker-compose --profile prod up -d
 ```
 
 Isso irá:
+
 - Subir o PostgreSQL na porta 5433
 - Subir a API FastAPI na porta 8001
 - Executar migrações do banco automaticamente
@@ -93,11 +94,13 @@ curl http://localhost:8001/health
 O Flutter web geralmente roda em `http://localhost:8080` ou uma porta dinâmica. Adicione essa origem ao `CORS_ORIGINS` do coldigom:
 
 **No arquivo `.env.dev` do coldigom**:
+
 ```env
 CORS_ORIGINS=http://localhost:3000,http://localhost,http://localhost:8080,http://localhost:50000
 ```
 
 Depois, reinicie o coldigom:
+
 ```bash
 cd /Volumes/SSD\ 2TB\ SD/dev/coldigom
 ./scripts/dev.sh
@@ -122,8 +125,12 @@ flutter pub get
 Execute o app no Chrome (web):
 
 ```bash
+```bash
 # Desenvolvimento (padrão)
 ./scripts/run-frontend.sh dev
+
+# Caso queira especificar uma porta customizada (default 64753):
+./scripts/run-frontend.sh dev 8080
 
 # Ou manualmente:
 cd frontend && flutter pub get && flutter run -d chrome \
@@ -133,7 +140,7 @@ cd frontend && flutter pub get && flutter run -d chrome \
   --dart-define=COLETANEA_API_BASE_URL=http://localhost:8001
 ```
 
-**Nota**: O Flutter está configurado para usar sempre a porta **64753** (via `--web-port=64753`), que já está incluída no CORS do coldigom.
+**Nota**: O script do Flutter está configurado para usar a porta **64753** como default (via `--web-port=64753`), caso sinta necessidade mude injetando a porta como segundo argumento, porém não se esqueça de adicionar essa origem no CORS do coldigom.
 
 ## Desenvolvimento
 
@@ -159,6 +166,7 @@ Ou use o script auxiliar:
 O backend está em `backend/` e usa FastAPI com PostgreSQL.
 
 **Estrutura**:
+
 ```
 backend/
 ├── app/
@@ -180,6 +188,7 @@ backend/
 O frontend está em `frontend/` e usa Flutter com Riverpod.
 
 **Estrutura**:
+
 ```
 frontend/lib/
 ├── core/           # Configurações centrais
@@ -242,6 +251,7 @@ Se você receber erros de CORS ao acessar a API do coldigom:
 Consulte [docs/CORS_SETUP.md](docs/CORS_SETUP.md) para instruções detalhadas.
 
 Você também pode usar o script de verificação:
+
 ```bash
 ./scripts/check-cors.sh
 ```
@@ -254,7 +264,7 @@ O projeto suporta dois ambientes: **dev** (desenvolvimento) e **prod** (produç�
 
 - `./scripts/dev.sh` - Inicia ambiente de desenvolvimento (Docker)
 - `./scripts/prod.sh` - Inicia ambiente de produção (Docker)
-- `./scripts/run-frontend.sh [dev|prod]` - Executa Flutter no Chrome
+- `./scripts/run-frontend.sh [dev|prod] [porta_opcional]` - Executa Flutter no Chrome
 - `./scripts/build-dev.sh` - Build Flutter para desenvolvimento
 - `./scripts/build-prod.sh` - Build Flutter para produção
 
@@ -263,6 +273,7 @@ Consulte [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md) para documentação comple
 ## Próximos Passos
 
 Consulte o [Guia de Desenvolvimento](docs/GUIA_DESENVOLVIMENTO_PLPCG.md) para mais detalhes sobre:
+
 - Use cases a implementar
 - Estrutura de features
 - Padrões de código

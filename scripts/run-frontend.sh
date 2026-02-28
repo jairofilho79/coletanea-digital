@@ -10,10 +10,11 @@ FRONTEND_DIR="$PROJECT_DIR/frontend"
 
 # Determinar ambiente (padrão: dev)
 ENV=${1:-dev}
+PORT=${2:-64753}
 
 if [ "$ENV" != "dev" ] && [ "$ENV" != "prod" ]; then
     echo "❌ Erro: Ambiente inválido. Use 'dev' ou 'prod'"
-    echo "   Uso: ./scripts/run-frontend.sh [dev|prod]"
+    echo "   Uso: ./scripts/run-frontend.sh [dev|prod] [port]"
     exit 1
 fi
 
@@ -86,17 +87,17 @@ echo ""
 echo "📦 Instalando dependências..."
 flutter pub get
 
-# Executar no Chrome com porta fixa (64753) e modo host para permitir acesso de outros dispositivos
+# Executar no Chrome com porta configurada e modo host para permitir acesso de outros dispositivos
 echo ""
-echo "🌐 Iniciando aplicação no Chrome na porta 64753 (modo host)..."
+echo "🌐 Iniciando aplicação no Chrome na porta $PORT (modo host)..."
 echo ""
 echo "✅ Aplicação será acessível em:"
-echo "   📱 Máquina local:    http://localhost:64753"
+echo "   📱 Máquina local:    http://localhost:$PORT"
 if [ -n "$LOCAL_IP" ] && [ "$LOCAL_IP" != "0.0.0.0" ]; then
-    echo "   🌍 Rede local:       http://$LOCAL_IP:64753"
+    echo "   🌍 Rede local:       http://$LOCAL_IP:$PORT"
     echo ""
     echo "💡 Para acessar de outros dispositivos na rede, use:"
-    echo "   http://$LOCAL_IP:64753"
+    echo "   http://$LOCAL_IP:$PORT"
     echo ""
     echo "📡 APIs configuradas para:"
     echo "   Coldigom:  $COLDIGOM_API_BASE_URL"
@@ -104,13 +105,13 @@ if [ -n "$LOCAL_IP" ] && [ "$LOCAL_IP" != "0.0.0.0" ]; then
     echo ""
     echo "⚠️  IMPORTANTE: Certifique-se de que o backend coldigom está rodando"
     echo "   e que o CORS_ORIGINS no .env.dev inclui:"
-    echo "   - http://$LOCAL_IP:64753 (IP da rede local)"
-    echo "   - http://0.0.0.0:64753 (fallback)"
+    echo "   - http://$LOCAL_IP:$PORT (IP da rede local)"
+    echo "   - http://0.0.0.0:$PORT (fallback)"
     echo ""
     echo "💡 Se tiver problemas de CORS, adicione manualmente ao .env.dev do coldigom:"
-    echo "   CORS_ORIGINS=...,http://$LOCAL_IP:64753,http://0.0.0.0:64753"
+    echo "   CORS_ORIGINS=...,http://$LOCAL_IP:$PORT,http://0.0.0.0:$PORT"
 else
-    echo "   🌍 Rede local:       http://[SEU-IP-LOCAL]:64753"
+    echo "   🌍 Rede local:       http://[SEU-IP-LOCAL]:$PORT"
     echo ""
     echo "💡 Para descobrir seu IP local, execute:"
     echo "   ifconfig | grep 'inet ' | grep -v 127.0.0.1"
@@ -122,7 +123,7 @@ echo ""
 if [ -n "$LOCAL_IP" ] && [ "$LOCAL_IP" != "0.0.0.0" ]; then
     echo "🌐 Usando IP real ($LOCAL_IP) para evitar problemas de CORS..."
     flutter run -d chrome \
-      --web-port=64753 \
+      --web-port=$PORT \
       --web-hostname=$LOCAL_IP \
       --dart-define=ENVIRONMENT=$ENV \
       --dart-define=COLDIGOM_API_BASE_URL=$COLDIGOM_API_BASE_URL \
@@ -130,7 +131,7 @@ if [ -n "$LOCAL_IP" ] && [ "$LOCAL_IP" != "0.0.0.0" ]; then
 else
     echo "⚠️  IP não detectado, usando 0.0.0.0 (pode ter problemas de CORS)..."
     flutter run -d chrome \
-      --web-port=64753 \
+      --web-port=$PORT \
       --web-hostname=0.0.0.0 \
       --dart-define=ENVIRONMENT=$ENV \
       --dart-define=COLDIGOM_API_BASE_URL=$COLDIGOM_API_BASE_URL \
