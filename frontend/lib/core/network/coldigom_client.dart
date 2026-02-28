@@ -28,18 +28,22 @@ class ColdigomClient {
     );
   }
 
+  /// Número máximo de retentativas em 429 (backoff com Retry-After)
+  static const int maxRetries429 = 2;
+
   /// GET request to coldigom API
-  /// Com retry limitado para evitar loops infinitos
+  /// Em 429: usa header Retry-After, senão backoff exponencial; retenta até [maxRetries429] vezes.
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
-    int maxRetries = 1, // Máximo 1 retry para evitar loops
+    int maxRetries = 1, // Para erros que não são 429
   }) async {
     int attempts = 0;
     DioException? lastError;
-    
-    while (attempts <= maxRetries) {
+    bool lastWas429 = false;
+
+    while (true) {
       try {
         return await _dio.get<T>(
           path,
@@ -49,11 +53,16 @@ class ColdigomClient {
       } on DioException catch (e) {
         lastError = e;
         attempts++;
-
         final statusCode = e.response?.statusCode;
 
-        // Não retry em 429 (rate limit) — nova tentativa só piora
         if (statusCode == 429) {
+          lastWas429 = true;
+          // Retry com backoff: usar Retry-After se vier no header, senão 60s
+          if (attempts <= maxRetries429) {
+            final retryAfterSeconds = _parseRetryAfter(e.response);
+            await Future.delayed(Duration(seconds: retryAfterSeconds));
+            continue;
+          }
           break;
         }
 
@@ -64,19 +73,27 @@ class ColdigomClient {
           break;
         }
 
-        // Se ainda há tentativas, aguarda antes de retry
-        if (attempts <= maxRetries) {
-          await Future.delayed(Duration(milliseconds: 500 * attempts));
-        }
+        // Para outros erros: retry limitado
+        if (attempts > maxRetries) break;
+        await Future.delayed(Duration(milliseconds: 500 * attempts));
       }
     }
-    
-    // Se chegou aqui, todas as tentativas falharam
-    throw _handleError(lastError!);
+
+    throw _handleError(lastError!, lastWas429: lastWas429);
   }
 
-  /// Handle Dio errors
-  Exception _handleError(DioException error) {
+  /// Lê Retry-After do header (segundos). Se ausente ou inválido, retorna 60.
+  int _parseRetryAfter(Response<dynamic>? response) {
+    if (response == null) return 60;
+    final v = response.headers.value('retry-after');
+    if (v == null || v.isEmpty) return 60;
+    final sec = int.tryParse(v);
+    if (sec != null && sec > 0 && sec <= 3600) return sec;
+    return 60;
+  }
+
+  /// Handle Dio errors. [lastWas429] indica que o último erro foi 429 (após retentativas).
+  Exception _handleError(DioException error, {bool lastWas429 = false}) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -84,9 +101,11 @@ class ColdigomClient {
         return Exception('Timeout ao conectar com o servidor');
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        if (statusCode == 429) {
+        if (statusCode == 429 || lastWas429) {
+          final retrySec = _parseRetryAfter(error.response);
+          final min = (retrySec / 60).ceil();
           return Exception(
-            'Muitas requisições. Aguarde um momento antes de tentar novamente.'
+            'Muitas requisições no momento. Tente novamente em ${min > 0 ? "$min minuto(s)" : "alguns segundos"}.'
           );
         }
         if (statusCode == 0) {

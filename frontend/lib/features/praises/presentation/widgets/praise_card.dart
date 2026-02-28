@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/praise.dart';
+import '../providers/translation_providers.dart';
 
 /// Card mobile-first para exibir um praise
-class PraiseCard extends StatelessWidget {
+class PraiseCard extends ConsumerWidget {
   final Praise praise;
   final VoidCallback? onTap;
 
@@ -13,7 +15,7 @@ class PraiseCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
@@ -59,7 +61,8 @@ class PraiseCard extends StatelessWidget {
               // Informações adicionais
               if (praise.author != null ||
                   praise.rhythm != null ||
-                  praise.tonality != null)
+                  praise.tonality != null ||
+                  praise.category != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Wrap(
@@ -81,6 +84,11 @@ class PraiseCard extends StatelessWidget {
                           icon: Icons.tune,
                           label: praise.tonality!,
                         ),
+                      if (praise.category != null)
+                        _InfoChip(
+                          icon: Icons.category,
+                          label: praise.category!,
+                        ),
                     ],
                   ),
                 ),
@@ -93,15 +101,30 @@ class PraiseCard extends StatelessWidget {
                     spacing: 4,
                     runSpacing: 4,
                     children: praise.tags.take(3).map((tag) {
-                      return Chip(
+                      // Garante que as traduções foram carregadas
+                      ref.watch(translationsLoadedProvider);
+                      final translationService = ref.watch(translationServiceProvider);
+                      final translatedName = translationService.getPraiseTagName(tag.id, tag.name);
+                      return Builder(
+                        builder: (context) => Chip(
                         label: Text(
-                          tag.name,
-                          style: const TextStyle(fontSize: 11),
+                          translatedName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).textTheme.bodyMedium?.color, // Mesmo cinza escuro das propriedades
+                            fontWeight: FontWeight.w600, // Mais grosso
+                          ),
                         ),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize:
                             MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                        backgroundColor: Theme.of(context).cardColor,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2, // Borda mais grossa
+                        ),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -116,14 +139,12 @@ class PraiseCard extends StatelessWidget {
                       Icon(
                         Icons.description,
                         size: 16,
-                        color: Colors.grey[400],
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${praise.materials.length} material(is)',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[400],
-                            ),
+                        '${praise.materials.length} ${praise.materials.length < 2 ? 'material' : 'materiais'}',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
@@ -147,17 +168,18 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey[400]),
+        Icon(icon, size: 14, color: textColor),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[400],
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600, // Mais grosso
                 ),
           ),
         ),

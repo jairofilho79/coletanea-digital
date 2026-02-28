@@ -5,6 +5,7 @@ class CurrentAudioTrack {
   final String displayName;
   final String? praiseName;
   final String? materialKindName;
+  final String? materialKindId; // ID para tradução dinâmica
 
   const CurrentAudioTrack({
     required this.materialId,
@@ -12,6 +13,7 @@ class CurrentAudioTrack {
     required this.displayName,
     this.praiseName,
     this.materialKindName,
+    this.materialKindId,
   });
 }
 

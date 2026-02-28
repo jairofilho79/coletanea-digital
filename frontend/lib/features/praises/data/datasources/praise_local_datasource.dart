@@ -2,11 +2,16 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/entities/praise.dart';
 import '../../../../core/storage/hive_service.dart';
 
+/// TTL do cache frio de catálogos (tags, etc.): 24 horas
+const Duration _catalogCacheTtl = Duration(hours: 24);
+
 /// Data source local para praises (Hive cache)
 class PraiseLocalDataSource {
   static const String _cacheKeyPrefix = 'praise_';
   static const String _listCacheKey = 'praises_list';
   static const String _lastUpdateKey = 'praises_last_update';
+  static const String _praiseTagsListKey = 'praise_tags_list';
+  static const String _praiseTagsLastUpdateKey = 'praise_tags_last_update';
 
   Box get _box => HiveService.praisesBox;
 
@@ -52,10 +57,48 @@ class PraiseLocalDataSource {
     }
   }
 
+  /// Cache frio: salva lista de tags (TTL 24h)
+  Future<void> cachePraiseTags(List<PraiseTag> tags) async {
+    final list = tags.map((t) => {'id': t.id, 'name': t.name}).toList();
+    await _box.put(_praiseTagsListKey, list);
+    await _box.put(_praiseTagsLastUpdateKey, DateTime.now().toIso8601String());
+  }
+
+  /// Cache frio: obtém tags do cache se ainda válido
+  List<PraiseTag>? getCachedPraiseTags() {
+    if (!isPraiseTagsCacheValid()) return null;
+    final data = _box.get(_praiseTagsListKey);
+    if (data == null) return null;
+    try {
+      return (data as List<dynamic>)
+          .map((e) => PraiseTag(
+                id: (e as Map)['id'] as String,
+                name: (e['name'] as String?) ?? '',
+              ))
+          .toList();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Cache frio: tags válidas se dentro do TTL (24h)
+  bool isPraiseTagsCacheValid() {
+    final at = _box.get(_praiseTagsLastUpdateKey);
+    if (at == null) return false;
+    try {
+      final t = DateTime.tryParse(at as String);
+      return t != null && DateTime.now().difference(t) < _catalogCacheTtl;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Limpa o cache de praises
   Future<void> clearCache() async {
     await _box.delete(_listCacheKey);
     await _box.delete(_lastUpdateKey);
+    await _box.delete(_praiseTagsListKey);
+    await _box.delete(_praiseTagsLastUpdateKey);
     // Remove praises individuais
     final keys = _box.keys
         .where((key) => key.toString().startsWith(_cacheKeyPrefix))

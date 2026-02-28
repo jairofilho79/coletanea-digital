@@ -62,6 +62,14 @@ class SalaCard extends StatelessWidget {
                             color: Colors.grey[400],
                           ),
                     ),
+                    if (sala.isFavorite) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.star,
+                        size: 16,
+                        color: Colors.amber,
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../audio/global_audio_player_provider.dart';
 import '../audio/global_audio_state.dart';
 import '../config/app_config.dart';
+import '../theme/app_theme.dart';
+import '../../features/praises/presentation/providers/translation_providers.dart';
+import 'language_selector.dart';
 
 /// Permite abrir o drawer da raiz a partir de qualquer página.
 class RootDrawerScope extends InheritedWidget {
@@ -99,57 +103,98 @@ class _AppDrawer extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  AppConfig.appName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+            Container(
+              color: AppTheme.backgroundColor,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      color: Colors.transparent,
+                    ),
+                    child: Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SvgPicture.asset(
+                            'assets/logo/LOGO_COLORIDO.svg',
+                            width: constraints.maxWidth,
+                            height: constraints.maxHeight,
+                            fit: BoxFit.contain,
+                            placeholderBuilder: (context) => const SizedBox(
+                              height: 48,
+                              width: 48,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        },
                       ),
-                ),
+                    ),
+                  ),
+                  if (audioState.hasTrack)
+                    _AudioDrawerContent(state: audioState),
+                ],
               ),
             ),
-            if (audioState.hasTrack) ...[
-              _AudioDrawerContent(state: audioState),
-              const Divider(height: 1),
-            ],
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.music_note),
-                    title: const Text('Louvores'),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      if (GoRouterState.of(context).uri.path != '/' &&
-                          GoRouterState.of(context).uri.path != '/praises') {
-                        context.go('/');
-                      }
-                    },
+              child: Container(
+                color: AppTheme.backgroundColor,
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    listTileTheme: ListTileThemeData(
+                      iconColor: AppTheme.primaryColor,
+                      textColor: AppTheme.textColor,
+                      subtitleTextStyle: TextStyle(color: AppTheme.textColor),
+                    ),
+                    dividerColor: Colors.white24,
+                    colorScheme: Theme.of(context).colorScheme.copyWith(
+                      surface: AppTheme.backgroundColor,
+                      onSurface: AppTheme.textColor,
+                      primary: AppTheme.primaryColor,
+                    ),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.list),
-                    title: const Text('Listas'),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      context.go('/listas');
-                    },
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.music_note),
+                        title: const Text('Louvores'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          if (GoRouterState.of(context).uri.path != '/' &&
+                              GoRouterState.of(context).uri.path != '/praises') {
+                            context.go('/');
+                          }
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.list),
+                        title: const Text('Listas'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.go('/listas');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.room),
+                        title: const Text('Salas'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.go('/salas');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.offline_pin),
+                        title: const Text('Materiais offline'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.go('/offline');
+                        },
+                      ),
+                      const Divider(height: 1),
+                      const LanguageSelector(),
+                    ],
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.room),
-                    title: const Text('Salas'),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      context.go('/salas');
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -172,143 +217,179 @@ class _AudioDrawerContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Garante que as traduções foram carregadas
+    ref.watch(translationsLoadedProvider);
+    final translationService = ref.watch(translationServiceProvider);
+    
     final t = state.track!;
     final theme = Theme.of(context);
+    
+    // Usa tradução dinâmica se materialKindId disponível, senão usa materialKindName como fallback
+    final materialKindDisplayName = t.materialKindId != null && t.materialKindId!.isNotEmpty
+        ? translationService.getMaterialKindName(t.materialKindId!, t.materialKindName ?? '')
+        : (t.materialKindName ?? '');
+
+    final titleLine = (t.praiseName != null && t.praiseName!.isNotEmpty)
+        ? t.praiseName!
+        : t.displayName;
+
+    final goldColor = AppTheme.primaryColor;
+    final whiteColor = AppTheme.textColor;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (t.praiseName != null && t.praiseName!.isNotEmpty)
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        t.praiseName!,
+                        titleLine,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: whiteColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    if (t.materialKindName != null &&
-                        t.materialKindName!.isNotEmpty)
-                      Text(
-                        t.materialKindName!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      if (materialKindDisplayName.isNotEmpty)
+                        Text(
+                          materialKindDisplayName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: whiteColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  color: whiteColor,
+                  tooltip: 'Fechar player',
+                  onPressed: () {
+                    ref.read(globalAudioPlayerProvider.notifier).close();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+            if (state.isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(),
+              )
+            else if (state.error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  state.error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            else ...[
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 3,
+                  activeTrackColor: goldColor,
+                  inactiveTrackColor: Colors.grey.shade400,
+                  thumbColor: goldColor,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                ),
+                child: Slider(
+                  value: state.duration.inMilliseconds > 0
+                      ? (state.position.inMilliseconds /
+                              state.duration.inMilliseconds)
+                          .clamp(0.0, 1.0)
+                      : 0.0,
+                  onChanged: state.duration.inMilliseconds > 0
+                      ? (v) {
+                          final pos = Duration(
+                            milliseconds: (v * state.duration.inMilliseconds)
+                                .round(),
+                          );
+                          ref
+                              .read(globalAudioPlayerProvider.notifier)
+                              .seek(pos);
+                        }
+                      : null,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: 'Fechar player',
-                onPressed: () {
-                  ref.read(globalAudioPlayerProvider.notifier).close();
-                  Navigator.of(context).pop();
-                },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(state.position),
+                    style: theme.textTheme.bodySmall?.copyWith(color: whiteColor),
+                  ),
+                  Text(
+                    _formatDuration(state.duration),
+                    style: theme.textTheme.bodySmall?.copyWith(color: whiteColor),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: goldColor,
+                      foregroundColor: whiteColor,
+                    ),
+                    icon: const Icon(Icons.replay_5),
+                    onPressed: () =>
+                        ref.read(globalAudioPlayerProvider.notifier).seekBackward(),
+                    tooltip: 'Voltar 5s',
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: goldColor,
+                      foregroundColor: whiteColor,
+                      minimumSize: const Size(52, 52),
+                      iconSize: 28,
+                    ),
+                    icon: Icon(
+                      state.isAtEnd
+                          ? Icons.replay
+                          : (state.isPlaying ? Icons.pause : Icons.play_arrow),
+                    ),
+                    onPressed: () =>
+                        ref.read(globalAudioPlayerProvider.notifier).togglePlayPause(),
+                    tooltip: state.isAtEnd
+                        ? 'Recomeçar'
+                        : (state.isPlaying ? 'Pausar' : 'Reproduzir'),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: goldColor,
+                      foregroundColor: whiteColor,
+                    ),
+                    icon: const Icon(Icons.forward_5),
+                    onPressed: () =>
+                        ref.read(globalAudioPlayerProvider.notifier).seekForward(),
+                    tooltip: 'Avançar 5s',
+                  ),
+                ],
               ),
             ],
-          ),
-          if (state.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: LinearProgressIndicator(),
-            )
-          else if (state.error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                state.error!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            )
-          else ...[
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              ),
-              child: Slider(
-                value: state.duration.inMilliseconds > 0
-                    ? (state.position.inMilliseconds /
-                            state.duration.inMilliseconds)
-                        .clamp(0.0, 1.0)
-                    : 0.0,
-                onChanged: state.duration.inMilliseconds > 0
-                    ? (v) {
-                        final pos = Duration(
-                          milliseconds: (v * state.duration.inMilliseconds)
-                              .round(),
-                        );
-                        ref
-                            .read(globalAudioPlayerProvider.notifier)
-                            .seek(pos);
-                      }
-                    : null,
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _formatDuration(state.position),
-                  style: theme.textTheme.bodySmall,
-                ),
-                Text(
-                  _formatDuration(state.duration),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.replay_5),
-                  onPressed: () =>
-                      ref.read(globalAudioPlayerProvider.notifier).seekBackward(),
-                  tooltip: 'Voltar 5s',
-                ),
-                IconButton.filled(
-                  icon: Icon(
-                    state.isAtEnd
-                        ? Icons.replay
-                        : (state.isPlaying ? Icons.pause : Icons.play_arrow),
-                  ),
-                  onPressed: () =>
-                      ref.read(globalAudioPlayerProvider.notifier).togglePlayPause(),
-                  tooltip: state.isAtEnd
-                      ? 'Recomeçar'
-                      : (state.isPlaying ? 'Pausar' : 'Reproduzir'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.forward_5),
-                  onPressed: () =>
-                      ref.read(globalAudioPlayerProvider.notifier).seekForward(),
-                  tooltip: 'Avançar 5s',
-                ),
-              ],
-            ),
           ],
-        ],
-      ),
+        ),
     );
   }
 }

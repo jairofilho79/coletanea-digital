@@ -18,13 +18,30 @@ class PraiseRepository {
     int limit = 100,
     String? name,
     String? tagId,
+    String? tonality,
+    String? rhythm,
+    String? category,
+    String? youtubeUrl,
+    bool searchInLyrics = false,
     String sortBy = 'name',
     String sortDirection = 'asc',
     String noNumber = 'last',
     bool forceRefresh = false,
   }) async {
-    // Se não for refresh forçado e cache válido, retorna do cache
-    if (!forceRefresh && localDataSource.isCacheValid()) {
+    // Busca por letra só existe na API: não usar cache quando searchInLyrics
+    // skip > 0 (paginação "carregar mais"): cache só tem primeira página, deve ir à API
+    // sortBy != 'name': cache foi preenchido com ordem por nome; ordenação por número exige API
+    // tonality/rhythm/category/youtubeUrl: filtros só existem na API; não usar cache quando aplicados
+    final useCache = !forceRefresh &&
+        !searchInLyrics &&
+        skip == 0 &&
+        sortBy == 'name' &&
+        tonality == null &&
+        rhythm == null &&
+        category == null &&
+        youtubeUrl == null &&
+        localDataSource.isCacheValid();
+    if (useCache) {
       final cached = localDataSource.getCachedPraises();
       if (cached != null && cached.isNotEmpty) {
         // Aplica filtros locais se necessário
@@ -39,7 +56,7 @@ class PraiseRepository {
               .where((p) => p.tags.any((tag) => tag.id == tagId))
               .toList();
         }
-        // Aplica paginação
+        // Aplica paginação (só primeira página veio do cache)
         final start = skip;
         final end = (start + limit).clamp(0, filtered.length);
         return filtered.sublist(start, end);
@@ -53,6 +70,11 @@ class PraiseRepository {
         limit: limit,
         name: name,
         tagId: tagId,
+        tonality: tonality,
+        rhythm: rhythm,
+        category: category,
+        youtubeUrl: youtubeUrl,
+        searchInLyrics: searchInLyrics,
         sortBy: sortBy,
         sortDirection: sortDirection,
         noNumber: noNumber,
@@ -60,8 +82,15 @@ class PraiseRepository {
 
       final praises = dtos.map((dto) => dto.toDomain()).toList();
 
-      // Salva no cache (apenas se não houver filtros específicos)
-      if (name == null && tagId == null) {
+      // Salva no cache só a primeira página, ordenada por nome, sem filtros tom/ritmo/youtube
+      if (skip == 0 &&
+          name == null &&
+          tagId == null &&
+          sortBy == 'name' &&
+          tonality == null &&
+          rhythm == null &&
+          category == null &&
+          youtubeUrl == null) {
         await localDataSource.cachePraises(praises);
       }
 
@@ -108,5 +137,19 @@ class PraiseRepository {
   /// Limpa o cache
   Future<void> clearCache() async {
     await localDataSource.clearCache();
+  }
+
+  /// Lista todas as tags de praise (cache frio: usa cache 24h, depois API)
+  Future<List<PraiseTag>> getPraiseTags({bool forceRefresh = false}) async {
+    if (!forceRefresh && localDataSource.isPraiseTagsCacheValid()) {
+      final cached = localDataSource.getCachedPraiseTags();
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
+      }
+    }
+    final dtos = await remoteDataSource.getPraiseTags();
+    final tags = dtos.map((dto) => dto.toDomain()).toList();
+    await localDataSource.cachePraiseTags(tags);
+    return tags;
   }
 }

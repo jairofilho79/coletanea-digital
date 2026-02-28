@@ -10,6 +10,8 @@ class Sala {
   final List<PraiseListItem> praises; // Lista de praises ordenável (compartilhada)
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isFavorite;
+  final String? importedFromListaId; // ID da lista da qual foi importada (se houver)
 
   Sala({
     required this.id,
@@ -18,6 +20,8 @@ class Sala {
     this.praises = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.isFavorite = false,
+    this.importedFromListaId,
   });
 
   /// Adiciona um praise à sala
@@ -42,6 +46,8 @@ class Sala {
       praises: newPraises,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      isFavorite: isFavorite,
+      importedFromListaId: importedFromListaId,
     );
   }
 
@@ -61,6 +67,8 @@ class Sala {
       praises: newPraises,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      isFavorite: isFavorite,
+      importedFromListaId: importedFromListaId,
     );
   }
 
@@ -89,6 +97,58 @@ class Sala {
       praises: newPraises,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      isFavorite: isFavorite,
+      importedFromListaId: importedFromListaId,
+    );
+  }
+
+  /// Importa todos os praises de uma lista para a sala
+  Sala importFromLista(Lista lista) {
+    final newPraises = List<PraiseListItem>.from(praises);
+    final existingPraiseIds = praises.map((p) => p.praise.id).toSet();
+    
+    // Adiciona apenas praises que ainda não estão na sala
+    for (final item in lista.praises) {
+      if (!existingPraiseIds.contains(item.praise.id)) {
+        newPraises.add(PraiseListItem(
+          praise: item.praise,
+          order: newPraises.length,
+        ));
+      }
+    }
+    
+    return Sala(
+      id: id,
+      name: name,
+      description: description,
+      praises: newPraises,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+      isFavorite: isFavorite,
+      importedFromListaId: lista.id, // Salva o ID da lista importada
+    );
+  }
+
+  /// Cria uma cópia da sala com campos atualizados
+  Sala copyWith({
+    String? id,
+    String? name,
+    String? description,
+    List<PraiseListItem>? praises,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isFavorite,
+    String? importedFromListaId,
+  }) {
+    return Sala(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      praises: praises ?? this.praises,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isFavorite: isFavorite ?? this.isFavorite,
+      importedFromListaId: importedFromListaId ?? this.importedFromListaId,
     );
   }
 }

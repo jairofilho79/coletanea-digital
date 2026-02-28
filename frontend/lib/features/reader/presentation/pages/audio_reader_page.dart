@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/audio/global_audio_player_provider.dart';
 import '../../../../core/audio/global_audio_state.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +14,7 @@ class AudioReaderPage extends ConsumerStatefulWidget {
   final String? materialName;
   final String? praiseName;
   final String? materialKindName;
+  final String? materialKindId;
 
   const AudioReaderPage({
     super.key,
@@ -21,6 +23,7 @@ class AudioReaderPage extends ConsumerStatefulWidget {
     this.materialName,
     this.praiseName,
     this.materialKindName,
+    this.materialKindId,
   });
 
   @override
@@ -44,6 +47,7 @@ class _AudioReaderPageState extends ConsumerState<AudioReaderPage> {
             displayName: displayName,
             praiseName: widget.praiseName,
             materialKindName: widget.materialKindName,
+            materialKindId: widget.materialKindId,
           );
     }
   }
@@ -62,25 +66,14 @@ class _AudioReaderPageState extends ConsumerState<AudioReaderPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(globalAudioPlayerProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         leading: const BackButtonWithDrawerOnLongPress(),
-        title: Text(state.track?.displayName ?? widget.materialName ?? 'Áudio'),
+        title: AppBarTitleWithLogo(
+          title: Text(state.track?.displayName ?? widget.materialName ?? 'Áudio'),
+        ),
         actions: [
-          if (state.hasTrack && !state.isLoading && state.error == null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Center(
-                child: Text(
-                  '${_formatDuration(state.position)} / ${_formatDuration(state.duration)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-              ),
-            ),
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: 'Fechar player',
@@ -132,111 +125,100 @@ class _AudioReaderPageState extends ConsumerState<AudioReaderPage> {
 
     final notifier = ref.read(globalAudioPlayerProvider.notifier);
 
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity != null && details.primaryVelocity! < -500) {
-          notifier.seekForward();
-        } else if (details.primaryVelocity != null &&
-            details.primaryVelocity! > 500) {
-          notifier.seekBackward();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.music_note,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.music_note,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 32),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 4,
+              activeTrackColor: Colors.amber.shade300,
+              inactiveTrackColor: Colors.grey.shade600,
+              thumbColor: Colors.amber.shade300,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             ),
-            const SizedBox(height: 24),
-            Text(
-              state.track?.displayName ?? widget.materialName ?? 'Áudio',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
+            child: Slider(
+              value: state.duration.inMilliseconds > 0
+                  ? (state.position.inMilliseconds /
+                          state.duration.inMilliseconds)
+                      .clamp(0.0, 1.0)
+                  : 0.0,
+              onChanged: state.duration.inMilliseconds > 0
+                  ? (v) {
+                      final pos = Duration(
+                        milliseconds: (v * state.duration.inMilliseconds)
+                            .round(),
+                      );
+                      notifier.seek(pos);
+                    }
+                  : null,
             ),
-            const SizedBox(height: 32),
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              ),
-              child: Slider(
-                value: state.duration.inMilliseconds > 0
-                    ? (state.position.inMilliseconds /
-                            state.duration.inMilliseconds)
-                        .clamp(0.0, 1.0)
-                    : 0.0,
-                onChanged: state.duration.inMilliseconds > 0
-                    ? (v) {
-                        final pos = Duration(
-                          milliseconds: (v * state.duration.inMilliseconds)
-                              .round(),
-                        );
-                        notifier.seek(pos);
-                      }
-                    : null,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(_formatDuration(state.position),
-                      style: Theme.of(context).textTheme.bodySmall),
-                  Text(_formatDuration(state.duration),
-                      style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton.filled(
-                  iconSize: 40,
-                  onPressed: notifier.seekBackward,
-                  icon: const Icon(Icons.replay_5),
-                  tooltip: 'Voltar 5s (ou arraste para a direita)',
+                Text(
+                  _formatDuration(state.position),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.white),
                 ),
-                const SizedBox(width: 24),
-                IconButton.filled(
-                  iconSize: 56,
-                  onPressed: notifier.togglePlayPause,
-                  icon: Icon(
-                    state.isAtEnd
-                        ? Icons.replay
-                        : (state.isPlaying
-                            ? Icons.pause
-                            : Icons.play_arrow),
-                  ),
-                  tooltip: state.isAtEnd
-                      ? 'Recomeçar'
-                      : (state.isPlaying ? 'Pausar' : 'Reproduzir'),
-                ),
-                const SizedBox(width: 24),
-                IconButton.filled(
-                  iconSize: 40,
-                  onPressed: notifier.seekForward,
-                  icon: const Icon(Icons.forward_5),
-                  tooltip: 'Avançar 5s (ou arraste para a esquerda)',
+                Text(
+                  _formatDuration(state.duration),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.white),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Arraste para a esquerda: +5s • Arraste para a direita: -5s',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton.filled(
+                iconSize: 40,
+                onPressed: notifier.seekBackward,
+                icon: const Icon(Icons.replay_5),
+                tooltip: 'Voltar 5s',
+              ),
+              const SizedBox(width: 24),
+              IconButton.filled(
+                iconSize: 56,
+                onPressed: notifier.togglePlayPause,
+                icon: Icon(
+                  state.isAtEnd
+                      ? Icons.replay
+                      : (state.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow),
+                ),
+                tooltip: state.isAtEnd
+                    ? 'Recomeçar'
+                    : (state.isPlaying ? 'Pausar' : 'Reproduzir'),
+              ),
+              const SizedBox(width: 24),
+              IconButton.filled(
+                iconSize: 40,
+                onPressed: notifier.seekForward,
+                icon: const Icon(Icons.forward_5),
+                tooltip: 'Avançar 5s',
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

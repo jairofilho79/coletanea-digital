@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/youtube_utils.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
+import '../../../salas/presentation/providers/sala_providers.dart';
 import '../providers/praise_providers.dart';
 import '../widgets/praise_card.dart';
+import '../widgets/praise_filters_dialog.dart';
 import '../widgets/praise_search_bar.dart';
 
 /// Página de listagem de praises (mobile-first).
 /// Se [addToListaId] for informado, ao tocar num louvor ele é adicionado a essa lista e a tela fecha.
+/// Se [addToSala] for informado, ao tocar num louvor ele é adicionado a essa sala e a tela fecha.
 class PraisesListPage extends ConsumerStatefulWidget {
   final String? addToListaId;
+  final String? addToSala;
 
-  const PraisesListPage({super.key, this.addToListaId});
+  const PraisesListPage({super.key, this.addToListaId, this.addToSala});
 
   @override
   ConsumerState<PraisesListPage> createState() => _PraisesListPageState();
@@ -20,62 +27,97 @@ class PraisesListPage extends ConsumerStatefulWidget {
 
 class _PraisesListPageState extends ConsumerState<PraisesListPage> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String? _searchQuery;
   String? _selectedTagId;
-  int _currentPage = 0;
-  final int _pageSize = 20;
+  String? _selectedTonality;
+  String? _selectedRhythm;
+  String? _selectedCategory;
+  bool _searchInLyrics = false;
+  /// 'name' ou 'number' (por número = sem número por último)
+  String _sortBy = 'name';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _onSearch(String query) {
     setState(() {
       _searchQuery = query.isEmpty ? null : query;
-      _currentPage = 0;
     });
   }
 
-  void _onTagFilter(String? tagId) {
-    setState(() {
-      _selectedTagId = tagId;
-      _currentPage = 0;
-    });
+  void _openFiltersDialog() {
+    PraiseFiltersDialog.show(
+      context,
+      initialTagId: _selectedTagId,
+      initialTonality: _selectedTonality,
+      initialRhythm: _selectedRhythm,
+      initialCategory: _selectedCategory,
+      initialSortBy: _sortBy,
+      initialSearchInLyrics: _searchInLyrics,
+      onApply: (result) {
+        setState(() {
+          _selectedTagId = result.tagId;
+          _selectedTonality = result.tonality;
+          _selectedRhythm = result.rhythm;
+          _selectedCategory = result.category;
+          _sortBy = result.sortBy;
+          _searchInLyrics = result.searchInLyrics;
+        });
+      },
+    );
   }
 
   void _refresh() {
-    setState(() {
-      _currentPage = 0;
-    });
-    // Força refresh do provider
-    final params = PraiseListParams(
-      skip: 0,
-      limit: _pageSize,
-      name: _searchQuery,
+    final youtubeId = _searchQuery != null ? extractYoutubeVideoId(_searchQuery!) : null;
+    // Se for link/ID do YouTube, filtrar só por youtube_url; senão filtrar por name (evita buscar nome contendo URL)
+    final filters = PraiseListFilters(
+      name: youtubeId != null ? null : _searchQuery,
       tagId: _selectedTagId,
-      forceRefresh: true,
+      tonality: _selectedTonality,
+      rhythm: _selectedRhythm,
+      category: _selectedCategory,
+      youtubeUrl: youtubeId != null ? _searchQuery : null,
+      searchInLyrics: _searchInLyrics,
+      sortBy: _sortBy,
+      noNumber: _sortBy == 'number' ? 'last' : 'last',
     );
-    ref.invalidate(praisesProvider(params));
+    ref.read(praisesInfiniteProvider(filters).notifier).loadInitial(forceRefresh: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final params = PraiseListParams(
-      skip: _currentPage * _pageSize,
-      limit: _pageSize,
-      name: _searchQuery,
+    final youtubeId = _searchQuery != null ? extractYoutubeVideoId(_searchQuery!) : null;
+    // Se for link/ID do YouTube, filtrar só por youtube_url; senão filtrar por name
+    final filters = PraiseListFilters(
+      name: youtubeId != null ? null : _searchQuery,
       tagId: _selectedTagId,
+      tonality: _selectedTonality,
+      rhythm: _selectedRhythm,
+      category: _selectedCategory,
+      youtubeUrl: youtubeId != null ? _searchQuery : null,
+      searchInLyrics: _searchInLyrics,
+      sortBy: _sortBy,
+      noNumber: _sortBy == 'number' ? 'last' : 'last',
     );
-
-    // Usa ref.read em vez de ref.watch para evitar rebuilds infinitos
-    // e só atualiza quando necessário (via refresh)
-    final praisesAsync = ref.watch(praisesProvider(params));
+    final infiniteState = ref.watch(praisesInfiniteProvider(filters));
+    final notifier = ref.read(praisesInfiniteProvider(filters).notifier);
 
     return Scaffold(
       appBar: AppBar(
-        leading: widget.addToListaId != null
+        leading: (widget.addToListaId != null || widget.addToSala != null)
             ? const BackButtonWithDrawerOnLongPress()
             : (RootDrawerScope.maybeOf(context) != null
                 ? IconButton(
@@ -84,7 +126,11 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                     tooltip: 'Menu',
                   )
                 : null),
-        title: Text(widget.addToListaId != null ? 'Adicionar louvor à lista' : 'Coletânea Digital'),
+        title: widget.addToListaId != null
+            ? AppBarTitleWithLogo.text('Adicionar louvor à lista')
+            : widget.addToSala != null
+                ? AppBarTitleWithLogo.text('Adicionar louvor à sala')
+                : const AppLogo(),
         actions: [
           if (widget.addToListaId == null)
             IconButton(
@@ -96,7 +142,7 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
       ),
       body: Column(
         children: [
-          if (widget.addToListaId != null)
+          if (widget.addToListaId != null || widget.addToSala != null)
             Material(
               color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
               child: Padding(
@@ -107,7 +153,9 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Toque em um louvor para adicionar à lista',
+                        widget.addToListaId != null
+                            ? 'Toque em um louvor para adicionar à lista'
+                            : 'Toque em um louvor para adicionar à sala',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),
@@ -117,17 +165,17 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                 ),
               ),
             ),
-          // Barra de busca
+          // Barra de busca (filtros avançados no botão à direita)
           PraiseSearchBar(
             controller: _searchController,
             onSearch: _onSearch,
-            onTagFilter: _onTagFilter,
-            selectedTagId: _selectedTagId,
+            focusNode: _searchFocusNode,
+            onAdvancedTap: _openFiltersDialog,
           ),
 
           // Lista de praises
           Expanded(
-            child: praisesAsync.when(
+            child: infiniteState.items.when(
               data: (praises) {
                 if (praises.isEmpty) {
                   return Center(
@@ -141,7 +189,11 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _searchQuery != null || _selectedTagId != null
+                          _searchQuery != null ||
+                                  _selectedTagId != null ||
+                                  _selectedTonality != null ||
+                                  _selectedRhythm != null ||
+                                  _selectedCategory != null
                               ? 'Nenhum louvor encontrado'
                               : 'Nenhum louvor disponível',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -153,16 +205,42 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                   );
                 }
 
+                final itemCount = praises.length + 1;
                 return RefreshIndicator(
-                  onRefresh: () async {
-                    final refreshParams = params.copyWith(forceRefresh: true);
-                    ref.invalidate(praisesProvider(refreshParams));
-                    await ref.read(praisesProvider(refreshParams).future);
-                  },
+                  onRefresh: () => notifier.loadInitial(forceRefresh: true),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(8),
-                    itemCount: praises.length,
+                    itemCount: itemCount,
                     itemBuilder: (context, index) {
+                      if (index == praises.length) {
+                        if (infiniteState.isLoadingMore) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        if (infiniteState.hasMore) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: OutlinedButton.icon(
+                                onPressed: () => ref
+                                    .read(praisesInfiniteProvider(filters).notifier)
+                                    .loadMore(),
+                                icon: const Icon(Icons.add_circle_outline, size: 20),
+                                label: const Text('Carregar mais'),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }
                       final praise = praises[index];
                       return PraiseCard(
                         praise: praise,
@@ -171,13 +249,38 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                             final repo = ref.read(listaRepositoryProvider);
                             final lista = repo.getListaById(widget.addToListaId!);
                             if (lista != null) {
-                              final newLista = lista.addPraise(praise);
-                              await repo.updateLista(newLista);
-                              ref.invalidate(listaProvider(widget.addToListaId!));
-                              ref.invalidate(listasProvider);
-                              if (context.mounted) {
-                                context.pop();
+                              final existingIndex = lista.praises.indexWhere(
+                                (item) => item.praise.id == praise.id,
+                              );
+                              if (existingIndex != -1) {
+                                final position = existingIndex + 1;
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'O louvor "${praise.displayName}" já se encontra na lista, na posição $position',
+                                      ),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                final newLista = lista.addPraise(praise);
+                                await repo.updateLista(newLista);
+                                ref.invalidate(listaProvider(widget.addToListaId!));
+                                ref.invalidate(listasProvider);
+                                if (context.mounted) {
+                                  context.pop();
+                                }
                               }
+                            }
+                          } else if (widget.addToSala != null) {
+                            final repo = ref.read(salaRepositoryProvider);
+                            await repo.addPraise(widget.addToSala!, praise);
+                            ref.invalidate(salaProvider(widget.addToSala!));
+                            ref.invalidate(salasProvider);
+                            if (context.mounted) {
+                              context.pop();
                             }
                           } else {
                             context.push('/praises/${praise.id}');

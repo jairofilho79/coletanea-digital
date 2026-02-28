@@ -14,6 +14,11 @@ class PraiseRemoteDataSource {
     int limit = 100,
     String? name,
     String? tagId,
+    String? tonality,
+    String? rhythm,
+    String? category,
+    String? youtubeUrl,
+    bool searchInLyrics = false,
     String sortBy = 'name',
     String sortDirection = 'asc',
     String noNumber = 'last',
@@ -35,8 +40,28 @@ class PraiseRemoteDataSource {
         queryParams['tag_id'] = tagId;
       }
 
+      if (tonality != null && tonality.isNotEmpty) {
+        queryParams['tonality'] = tonality;
+      }
+
+      if (rhythm != null && rhythm.isNotEmpty) {
+        queryParams['rhythm'] = rhythm;
+      }
+
+      if (category != null && category.isNotEmpty) {
+        queryParams['category'] = category;
+      }
+
+      if (youtubeUrl != null && youtubeUrl.isNotEmpty) {
+        queryParams['youtube_url'] = youtubeUrl;
+      }
+
+      if (searchInLyrics) {
+        queryParams['search_in_lyrics'] = true;
+      }
+
       final response = await client.get<List<dynamic>>(
-        '/api/v1/praises',
+        '/api/v1/praises/',
         queryParameters: queryParams,
       );
 
@@ -60,6 +85,32 @@ class PraiseRemoteDataSource {
     } catch (e) {
       debugPrint('Erro ao buscar praises: $e');
       throw Exception('Erro ao buscar praises: $e');
+    }
+  }
+
+  /// Lista todas as tags de praise (GET /api/v1/praise-tags/)
+  Future<List<PraiseTagDto>> getPraiseTags() async {
+    try {
+      final response = await client.get<List<dynamic>>(
+        '/api/v1/praise-tags/',
+      );
+
+      if (response.data == null) {
+        return [];
+      }
+
+      final tags = <PraiseTagDto>[];
+      for (var json in response.data!) {
+        try {
+          tags.add(PraiseTagDto.fromJson(json as Map<String, dynamic>));
+        } catch (e) {
+          debugPrint('Erro ao parsear tag: $e');
+        }
+      }
+      return tags;
+    } catch (e) {
+      debugPrint('Erro ao buscar tags: $e');
+      rethrow;
     }
   }
 

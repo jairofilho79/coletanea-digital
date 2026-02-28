@@ -4,9 +4,12 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bar_title_with_logo.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/storage/providers.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../salas/presentation/providers/sala_providers.dart';
+import '../../../salas/domain/entities/playlist_material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Leitor de PDF com suporte offline
@@ -15,12 +18,22 @@ class PdfReaderPage extends ConsumerStatefulWidget {
   final String materialId;
   final String materialPath;
   final String? materialName;
+  final String? materialKindId;
+  final String? materialKindName;
+  final String? salaId; // ID da sala se vindo de uma sala
+  final String? participanteId; // ID do participante
+  final int? materialIndex; // Índice do material na playlist
 
   const PdfReaderPage({
     super.key,
     required this.materialId,
     required this.materialPath,
     this.materialName,
+    this.materialKindId,
+    this.materialKindName,
+    this.salaId,
+    this.participanteId,
+    this.materialIndex,
   });
 
   @override
@@ -98,7 +111,13 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Erro ao carregar PDF: $e';
+        final isNetworkError = e is DioException &&
+            (e.type == DioExceptionType.connectionError ||
+                e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.receiveTimeout);
+        _error = isNetworkError
+            ? 'Você está offline e este material não está disponível no dispositivo. Conecte-se para baixar ou acesse a tela "Materiais offline" para gerenciar o cache.'
+            : 'Erro ao carregar PDF: $e';
       });
     }
   }
@@ -139,6 +158,8 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
             materialId: widget.materialId,
             extension: 'pdf',
             data: bytes,
+            materialKindId: widget.materialKindId,
+            materialKindName: widget.materialKindName,
           );
         }
 
@@ -182,9 +203,20 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButtonWithDrawerOnLongPress(),
-        title: Text(widget.materialName ?? 'PDF'),
+        leading: widget.salaId != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/salas/${widget.salaId}'),
+                tooltip: 'Voltar para playlist',
+              )
+            : const BackButtonWithDrawerOnLongPress(),
+        title: AppBarTitleWithLogo(
+          title: Text(widget.materialName ?? 'PDF'),
+        ),
         actions: [
+          // Botão próximo material quando vindo de sala
+          if (widget.salaId != null && widget.participanteId != null && widget.materialIndex != null)
+            _buildNextMaterialButton(context),
           // Indicador de página: "1 de X" (só mostra quando PDF carregado e páginas disponíveis)
           if (_pdfBytes != null && _totalPages > 0)
             Padding(
@@ -194,6 +226,7 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
                   '$_currentPage de $_totalPages',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
                 ),
               ),
@@ -259,7 +292,54 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
         ],
       ),
       body: _buildBody(),
+      floatingActionButton: widget.salaId != null && widget.participanteId != null && widget.materialIndex != null
+          ? FloatingActionButton(
+              onPressed: () => _navigateToNextMaterial(context),
+              child: const Icon(Icons.arrow_forward),
+              tooltip: 'Próximo material',
+            )
+          : null,
     );
+  }
+
+  Widget _buildNextMaterialButton(BuildContext context) {
+    return FutureBuilder<List<MaterialNaPlaylist>>(
+      future: ref.read(playlistMateriaisProvider(PlaylistParams(salaId: widget.salaId!)).future),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final materiais = snapshot.data!;
+        final hasNext = widget.materialIndex! < materiais.length - 1;
+        if (!hasNext) return const SizedBox.shrink();
+        
+        return IconButton(
+          icon: const Icon(Icons.arrow_forward),
+          onPressed: () => _navigateToNextMaterial(context),
+          tooltip: 'Próximo material',
+        );
+      },
+    );
+  }
+
+  void _navigateToNextMaterial(BuildContext context) async {
+    if (widget.salaId == null || widget.participanteId == null || widget.materialIndex == null) return;
+    
+    final materiais = await ref.read(playlistMateriaisProvider(PlaylistParams(salaId: widget.salaId!)).future);
+    
+    final nextIndex = widget.materialIndex! + 1;
+    if (nextIndex >= materiais.length) return;
+    
+    final nextMaterial = materiais[nextIndex];
+    final materialPath = ''; // TODO: obter path do material
+    
+    if (nextMaterial.tipoMaterial == 'pdf') {
+      context.pushReplacement(
+        '/reader/pdf/${nextMaterial.materialId}?path=$materialPath&name=${nextMaterial.nomeMaterial}&salaId=${widget.salaId}&participanteId=${widget.participanteId}&materialIndex=$nextIndex',
+      );
+    } else if (nextMaterial.tipoMaterial == 'lyrics') {
+      context.pushReplacement(
+        '/reader/lyrics/${nextMaterial.materialId}?path=$materialPath&name=${nextMaterial.nomeMaterial}&salaId=${widget.salaId}&participanteId=${widget.participanteId}&materialIndex=$nextIndex',
+      );
+    }
   }
 
   Widget _buildBody() {
