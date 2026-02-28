@@ -23,7 +23,7 @@ class _BatchMaterialItem {
 
 /// Serviço de download em lote por material kind (GET /batch + downloads)
 class OfflineMaterialService {
-  static const int maxConcurrent = 3;
+  static const int maxConcurrent = 1;
   static const int maxRetries = 3;
   static const int estimatedMaxFileBytes = 20 * 1024 * 1024; // 20 MB
 
@@ -216,7 +216,7 @@ class OfflineMaterialService {
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       if (cancelToken?.isCancelled == true) return false;
       try {
-        await Future.delayed(Duration(milliseconds: attempt == 0 ? 0 : (1 << attempt) * 500));
+        await Future.delayed(Duration(milliseconds: attempt == 0 ? 150 : (1 << attempt) * 500));
         final response = await _dio.get<List<int>>(
           path,
           options: Options(responseType: ResponseType.bytes),
@@ -232,6 +232,14 @@ class OfflineMaterialService {
           materialKindName: materialKindName,
         );
         return true;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 429) {
+          final retryAfterStr = e.response?.headers.value('retry-after');
+          final sec = int.tryParse(retryAfterStr ?? '60') ?? 60;
+          await Future.delayed(Duration(seconds: sec));
+          if (attempt < maxRetries - 1) continue;
+        }
+        if (attempt == maxRetries - 1) return false;
       } catch (_) {
         if (attempt == maxRetries - 1) return false;
       }
@@ -249,7 +257,7 @@ class OfflineMaterialService {
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       if (cancelToken?.isCancelled == true) return false;
       try {
-        await Future.delayed(Duration(milliseconds: attempt == 0 ? 0 : (1 << attempt) * 500));
+        await Future.delayed(Duration(milliseconds: attempt == 0 ? 150 : (1 << attempt) * 500));
         final response = await _dio.get<Map<String, dynamic>>(
           path,
           cancelToken: cancelToken,
@@ -271,6 +279,14 @@ class OfflineMaterialService {
           );
         }
         return true;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 429) {
+          final retryAfterStr = e.response?.headers.value('retry-after');
+          final sec = int.tryParse(retryAfterStr ?? '60') ?? 60;
+          await Future.delayed(Duration(seconds: sec));
+          if (attempt < maxRetries - 1) continue;
+        }
+        if (attempt == maxRetries - 1) return false;
       } catch (_) {
         if (attempt == maxRetries - 1) return false;
       }
