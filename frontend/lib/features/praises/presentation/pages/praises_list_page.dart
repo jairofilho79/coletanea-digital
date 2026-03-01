@@ -80,6 +80,13 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
     );
   }
 
+  bool get _hasActiveFilters =>
+      _searchQuery != null ||
+      _selectedTagId != null ||
+      _selectedTonality != null ||
+      _selectedRhythm != null ||
+      _selectedCategory != null;
+
   void _refresh() {
     final youtubeId = _searchQuery != null ? extractYoutubeVideoId(_searchQuery!) : null;
     // Se for link/ID do YouTube, filtrar só por youtube_url; senão filtrar por name (evita buscar nome contendo URL)
@@ -171,6 +178,7 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
             onSearch: _onSearch,
             focusNode: _searchFocusNode,
             onAdvancedTap: _openFiltersDialog,
+            onSearchOnline: _refresh,
           ),
 
           // Lista de praises
@@ -178,6 +186,9 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
             child: infiniteState.items.when(
               data: (praises) {
                 if (praises.isEmpty) {
+                  final message = _hasActiveFilters
+                      ? 'Nenhum louvor encontrado'
+                      : 'Nenhum louvor disponível';
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -189,17 +200,19 @@ class _PraisesListPageState extends ConsumerState<PraisesListPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _searchQuery != null ||
-                                  _selectedTagId != null ||
-                                  _selectedTonality != null ||
-                                  _selectedRhythm != null ||
-                                  _selectedCategory != null
-                              ? 'Nenhum louvor encontrado'
-                              : 'Nenhum louvor disponível',
+                          message,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Colors.grey[400],
                               ),
                         ),
+                        if (_hasActiveFilters) ...[
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _refresh,
+                            icon: const Icon(Icons.public, size: 20),
+                            label: const Text('Buscar online'),
+                          ),
+                        ],
                       ],
                     ),
                   );

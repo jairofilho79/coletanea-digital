@@ -1,38 +1,43 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
 import '../../domain/entities/praise.dart';
 import '../../../../core/storage/hive_service.dart';
+import '../../../../core/storage/metadata_cache_service.dart';
 
-/// TTL do cache frio de catálogos (tags, etc.): 24 horas
-const Duration _catalogCacheTtl = Duration(hours: 24);
-
-/// Data source local para praises (Hive cache)
+/// Data source local para praises (cache via MetadataCacheService + Hive para tags legado)
 class PraiseLocalDataSource {
-  static const String _cacheKeyPrefix = 'praise_';
-  static const String _listCacheKey = 'praises_list';
-  static const String _lastUpdateKey = 'praises_last_update';
   static const String _praiseTagsListKey = 'praise_tags_list';
   static const String _praiseTagsLastUpdateKey = 'praise_tags_last_update';
 
   Box get _box => HiveService.praisesBox;
 
-  /// Salva lista de praises no cache
+  /// Salva lista de praises no cache (cada item com version e TTL 24h)
   Future<void> cachePraises(List<Praise> praises) async {
-    final cacheData = praises.map((praise) => _praiseToJson(praise)).toList();
-    await _box.put(_listCacheKey, cacheData);
-    await _box.put(_lastUpdateKey, DateTime.now().toIso8601String());
+    for (final p in praises) {
+      final version = p.updatedAt.toUtc().toIso8601String();
+      await MetadataCacheService.putItem(
+        MetadataCacheType.praise,
+        p.id,
+        _praiseToJson(p),
+        version,
+      );
+    }
   }
 
-  /// Obtém lista de praises do cache
+  /// Obtém lista de praises do cache (sempre do cache; revalidação em background)
   List<Praise>? getCachedPraises() {
-    final cacheData = _box.get(_listCacheKey);
-    if (cacheData == null) {
-      return null;
-    }
-
+    final list = MetadataCacheService.getAll(MetadataCacheType.praise);
+    if (list.isEmpty) return null;
     try {
-      return (cacheData as List<dynamic>)
-          .map((json) => _praiseFromJson(json as Map<String, dynamic>))
+      final praises = list
+          .map((json) => _praiseFromJson(json))
+          .whereType<Praise>()
           .toList();
+      praises.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return praises;
     } catch (e) {
       return null;
     }
@@ -40,88 +45,81 @@ class PraiseLocalDataSource {
 
   /// Salva um praise individual no cache
   Future<void> cachePraise(Praise praise) async {
-    await _box.put('$_cacheKeyPrefix${praise.id}', _praiseToJson(praise));
+    final version = praise.updatedAt.toUtc().toIso8601String();
+    await MetadataCacheService.putItem(
+      MetadataCacheType.praise,
+      praise.id,
+      _praiseToJson(praise),
+      version,
+    );
   }
 
   /// Obtém um praise do cache
   Praise? getCachedPraise(String id) {
-    final data = _box.get('$_cacheKeyPrefix$id');
-    if (data == null) {
-      return null;
-    }
-
+    final data = MetadataCacheService.getItem(MetadataCacheType.praise, id);
+    if (data == null) return null;
     try {
-      return _praiseFromJson(data as Map<String, dynamic>);
+      return _praiseFromJson(data);
     } catch (e) {
       return null;
     }
   }
 
-  /// Cache frio: salva lista de tags (TTL 24h)
+  /// Cache frio: salva lista de tags (TTL 24h via MetadataCacheService)
   Future<void> cachePraiseTags(List<PraiseTag> tags) async {
-    final list = tags.map((t) => {'id': t.id, 'name': t.name}).toList();
-    await _box.put(_praiseTagsListKey, list);
+    for (final t in tags) {
+      final payload = {'id': t.id, 'name': t.name};
+      final version = _hashIdName(t.id, t.name);
+      await MetadataCacheService.putItem(
+        MetadataCacheType.praiseTag,
+        t.id,
+        payload,
+        version,
+      );
+    }
     await _box.put(_praiseTagsLastUpdateKey, DateTime.now().toIso8601String());
   }
 
-  /// Cache frio: obtém tags do cache se ainda válido
+  static String _hashIdName(String id, String name) {
+    final bytes = utf8.encode('$id:$name');
+    return sha256.convert(bytes).toString();
+  }
+
+  /// Cache frio: obtém tags do cache (sempre do cache se houver dados)
   List<PraiseTag>? getCachedPraiseTags() {
-    if (!isPraiseTagsCacheValid()) return null;
-    final data = _box.get(_praiseTagsListKey);
-    if (data == null) return null;
+    final list = MetadataCacheService.getAll(MetadataCacheType.praiseTag);
+    if (list.isEmpty) return null;
     try {
-      return (data as List<dynamic>)
-          .map((e) => PraiseTag(
-                id: (e as Map)['id'] as String,
-                name: (e['name'] as String?) ?? '',
-              ))
+      return list
+          .map((e) {
+            final id = e['id'] as String?;
+            final name = e['name'] as String? ?? '';
+            if (id == null || id.isEmpty) return null;
+            return PraiseTag(id: id, name: name);
+          })
+          .whereType<PraiseTag>()
           .toList();
     } catch (e) {
       return null;
     }
   }
 
-  /// Cache frio: tags válidas se dentro do TTL (24h)
+  /// Cache frio: tags válidas se temos dados (revalidação em background)
   bool isPraiseTagsCacheValid() {
-    final at = _box.get(_praiseTagsLastUpdateKey);
-    if (at == null) return false;
-    try {
-      final t = DateTime.tryParse(at as String);
-      return t != null && DateTime.now().difference(t) < _catalogCacheTtl;
-    } catch (e) {
-      return false;
-    }
+    return MetadataCacheService.hasAny(MetadataCacheType.praiseTag);
   }
 
-  /// Limpa o cache de praises
+  /// Limpa o cache de praises e tags no MetadataCacheService
   Future<void> clearCache() async {
-    await _box.delete(_listCacheKey);
-    await _box.delete(_lastUpdateKey);
+    await MetadataCacheService.removeAll(MetadataCacheType.praise);
+    await MetadataCacheService.removeAll(MetadataCacheType.praiseTag);
     await _box.delete(_praiseTagsListKey);
     await _box.delete(_praiseTagsLastUpdateKey);
-    // Remove praises individuais
-    final keys = _box.keys
-        .where((key) => key.toString().startsWith(_cacheKeyPrefix))
-        .toList();
-    for (final key in keys) {
-      await _box.delete(key);
-    }
   }
 
-  /// Verifica se o cache está válido (menos de 1 hora)
+  /// Verifica se há cache de praises (sempre servir cache; revalidação atualiza em background)
   bool isCacheValid() {
-    final lastUpdate = _box.get(_lastUpdateKey);
-    if (lastUpdate == null) {
-      return false;
-    }
-
-    try {
-      final lastUpdateTime = DateTime.parse(lastUpdate as String);
-      final now = DateTime.now();
-      return now.difference(lastUpdateTime).inHours < 1;
-    } catch (e) {
-      return false;
-    }
+    return MetadataCacheService.hasAny(MetadataCacheType.praise);
   }
 
   /// Converte Praise para JSON

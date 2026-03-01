@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../network/providers.dart';
 import '../offline/offline_material_service.dart';
 import 'hive_service.dart';
 import 'material_cache_service.dart';
+import 'metadata_revalidation_runner.dart';
 import '../../features/reader/data/services/material_content_service.dart';
 
 /// Provider for metadata box
@@ -60,4 +62,10 @@ final materialContentServiceProvider = Provider((ref) {
 final offlineMaterialServiceProvider = Provider<OfflineMaterialService>((ref) {
   final cache = ref.read(materialCacheServiceProvider);
   return OfflineMaterialService(cache: cache);
+});
+
+/// Provider for metadata cache revalidation (manifest + diff + fetch alterados)
+final metadataRevalidationRunnerProvider = Provider<MetadataRevalidationRunner>((ref) {
+  final client = ref.watch(coldigomClientProvider);
+  return MetadataRevalidationRunner(client);
 });

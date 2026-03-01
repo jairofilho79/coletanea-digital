@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 /// Barra de busca mobile-first para praises.
 /// Debounce de 1s na digitação; ao limpar o campo dispara onSearch('') imediatamente.
 /// Filtros avançados (tag, tom, ritmo, ordenação, letra) ficam no dialog aberto por [onAdvancedTap].
+/// [onSearchOnline] força busca na API (label "Online"); ordem dos botões: Limpar → Online → Filtros.
 class PraiseSearchBar extends StatefulWidget {
   final TextEditingController controller;
   final Function(String) onSearch;
   final FocusNode? focusNode;
   /// Abre o dialog de filtros avançados. Se null, o botão de avançados não é exibido.
   final VoidCallback? onAdvancedTap;
+  /// Força busca online (API). Se não null, exibe botão com ícone global (label "Online").
+  final VoidCallback? onSearchOnline;
 
   const PraiseSearchBar({
     super.key,
@@ -17,6 +20,7 @@ class PraiseSearchBar extends StatefulWidget {
     required this.onSearch,
     this.focusNode,
     this.onAdvancedTap,
+    this.onSearchOnline,
   });
 
   @override
@@ -54,40 +58,41 @@ class _PraiseSearchBarState extends State<PraiseSearchBar> {
       child: ValueListenableBuilder<TextEditingValue>(
         valueListenable: widget.controller,
         builder: (context, value, child) {
+          final hasClear = value.text.isNotEmpty;
+          final hasOnline = widget.onSearchOnline != null;
+          final hasFilter = widget.onAdvancedTap != null;
+          final hasAnySuffix = hasClear || hasOnline || hasFilter;
           Widget? suffixIcon;
-          if (value.text.isNotEmpty && widget.onAdvancedTap != null) {
+          if (hasAnySuffix) {
             suffixIcon = Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    widget.controller.clear();
-                    _debounceTimer?.cancel();
-                    widget.onSearch('');
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  onPressed: widget.onAdvancedTap,
-                  tooltip: 'Filtros avançados',
-                ),
+                if (hasClear)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        widget.controller.clear();
+                        _debounceTimer?.cancel();
+                        widget.onSearch('');
+                      },
+                      tooltip: 'Limpar',
+                    ),
+                  ),
+                if (hasOnline)
+                  IconButton(
+                    icon: const Icon(Icons.public),
+                    onPressed: widget.onSearchOnline,
+                    tooltip: 'Online',
+                  ),
+                if (hasFilter)
+                  IconButton(
+                    icon: const Icon(Icons.tune),
+                    onPressed: widget.onAdvancedTap,
+                    tooltip: 'Filtros avançados',
+                  ),
               ],
-            );
-          } else if (value.text.isEmpty && widget.onAdvancedTap != null) {
-            suffixIcon = IconButton(
-              icon: const Icon(Icons.tune),
-              onPressed: widget.onAdvancedTap,
-              tooltip: 'Filtros avançados',
-            );
-          } else if (value.text.isNotEmpty) {
-            suffixIcon = IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                widget.controller.clear();
-                _debounceTimer?.cancel();
-                widget.onSearch('');
-              },
             );
           }
           // Constante para garantir que border-radius seja idêntico em todos os lugares

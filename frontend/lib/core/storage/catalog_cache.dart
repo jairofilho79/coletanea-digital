@@ -1,43 +1,43 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:convert';
 
-import 'hive_service.dart';
+import 'package:crypto/crypto.dart';
 
-/// TTL do cache frio de catálogos (material-kinds, etc.): 24 horas
-const Duration catalogCacheTtl = Duration(hours: 24);
+import 'metadata_cache_service.dart';
 
-const String _keyMaterialKinds = 'catalog_material_kinds';
-const String _keyMaterialKindsAt = 'catalog_material_kinds_at';
-
-/// Cache frio para listas de catálogo (material-kinds, etc.) — reduz chamadas à API.
+/// Cache frio para listas de catálogo (material-kinds) via MetadataCacheService (TTL 24h, revalidação por version).
 class CatalogCache {
-  static Box get _box => HiveService.settingsBox;
-
-  /// Salva lista de material kinds (lista de mapas com id e name)
-  static Future<void> setMaterialKinds(List<Map<String, String>> list) async {
-    await _box.put(_keyMaterialKinds, list);
-    await _box.put(_keyMaterialKindsAt, DateTime.now().toIso8601String());
+  static String _versionFromIdName(String id, String name) {
+    final bytes = utf8.encode('$id:$name');
+    return sha256.convert(bytes).toString();
   }
 
-  /// Retorna material kinds do cache se ainda válido; caso contrário null.
+  /// Salva lista de material kinds no cache (cada item com version e TTL 24h)
+  static Future<void> setMaterialKinds(List<Map<String, String>> list) async {
+    for (final e in list) {
+      final id = e['id'] ?? '';
+      final name = e['name'] ?? '';
+      if (id.isEmpty) continue;
+      final payload = {'id': id, 'name': name};
+      final version = _versionFromIdName(id, name);
+      await MetadataCacheService.putItem(
+        MetadataCacheType.materialKind,
+        id,
+        payload,
+        version,
+      );
+    }
+  }
+
+  /// Retorna material kinds do cache (sempre do cache se houver dados; revalidação em background)
   static List<Map<String, String>>? getMaterialKinds() {
-    final at = _box.get(_keyMaterialKindsAt);
-    if (at == null) return null;
-    try {
-      final t = DateTime.tryParse(at as String);
-      if (t == null || DateTime.now().difference(t) > catalogCacheTtl) {
-        return null;
-      }
-    } catch (e) {
-      return null;
-    }
-    final data = _box.get(_keyMaterialKinds);
-    if (data == null) return null;
-    try {
-      return (data as List<dynamic>)
-          .map((e) => Map<String, String>.from(e as Map))
-          .toList();
-    } catch (e) {
-      return null;
-    }
+    final list = MetadataCacheService.getAll(MetadataCacheType.materialKind);
+    if (list.isEmpty) return null;
+    return list
+        .map((e) => {
+              'id': (e['id'] as String?) ?? '',
+              'name': (e['name'] as String?) ?? '',
+            })
+        .where((e) => e['id']!.isNotEmpty)
+        .toList();
   }
 }
