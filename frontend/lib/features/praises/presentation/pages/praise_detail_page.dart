@@ -659,14 +659,25 @@ class _MaterialCard extends ConsumerWidget {
 
             if (isPdf || isLyrics) {
               final participanteId = await ref.read(participanteIdProvider.future);
+              final currentPlaylist = await ref.read(
+                playlistMateriaisProvider(PlaylistParams(salaId: salaId!)).future,
+              );
+              if (currentPlaylist.any((m) => m.materialId == material.id)) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Esse material já está na playlist'),
+                    ),
+                  );
+                }
+                return;
+              }
               final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
-              
               final translationService = ref.read(translationServiceProvider);
               final translatedMaterialKindName = translationService.getMaterialKindName(
                 material.materialKindId,
                 material.materialKind?.name ?? 'Material',
               );
-              
               final materialNaPlaylist = MaterialNaPlaylist(
                 materialId: material.id,
                 praiseId: praiseId,
@@ -676,10 +687,8 @@ class _MaterialCard extends ConsumerWidget {
                 nomePraise: praiseName,
                 tipoMaterial: isPdf ? 'pdf' : 'lyrics',
               );
-              
               await playlistRepo.addMaterial(salaId!, participanteId, materialNaPlaylist);
               ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: salaId!)));
-              
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Material adicionado à playlist')),

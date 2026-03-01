@@ -48,16 +48,6 @@ class AppDialog extends StatelessWidget {
   // Estilo base
   // ---------------------------------------------------------------------------
 
-  static ShapeDecoration get _shape => ShapeDecoration(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 2,
-          ),
-        ),
-      );
-
   static TextStyle get _titleStyle => GoogleFonts.ebGaramond(
         color: AppTheme.primaryColor,
         fontWeight: FontWeight.bold,

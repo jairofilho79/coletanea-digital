@@ -13,8 +13,11 @@ class PlaylistMateriais {
     required this.updatedAt,
   });
 
-  /// Adiciona um material à playlist
+  /// Adiciona um material à playlist. Não adiciona se já existir (evita duplicatas).
   PlaylistMateriais addMaterial(MaterialNaPlaylist material) {
+    if (materiais.any((m) => m.materialId == material.materialId)) {
+      return this;
+    }
     final newMateriais = List<MaterialNaPlaylist>.from(materiais);
     newMateriais.add(material);
     return PlaylistMateriais(

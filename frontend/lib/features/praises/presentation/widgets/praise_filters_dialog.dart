@@ -224,7 +224,7 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
               DropdownButtonFormField<String>(
                 initialValue: _sortBy,
                 decoration: _inputDecoration,
-                dropdownColor: const Color(0xFFF5E6D3),
+                dropdownColor: AppTheme.cardColor,
                 style: const TextStyle(color: AppTheme.textDark),
                 items: const [
                   DropdownMenuItem(value: 'name', child: Text('Nome')),
@@ -245,8 +245,8 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
                       value: _searchInLyrics,
                       onChanged: (value) => setState(() => _searchInLyrics = value ?? false),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      activeColor: const Color(0xFFD4AF37),
-                      checkColor: const Color(0xFF4B2D2B),
+                      activeColor: AppTheme.primaryColor,
+                      checkColor: AppTheme.backgroundColor,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -268,26 +268,18 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
           onPressed: _clearFilters,
           child: const Text(
             'Limpar filtros',
-            style: TextStyle(color: Color(0xFFD4AF37)),
+            style: TextStyle(color: AppTheme.primaryColor),
           ),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(
             'Cancelar',
-            style: TextStyle(color: Color(0xFFD4AF37)),
+            style: TextStyle(color: AppTheme.primaryColor),
           ),
         ),
         ElevatedButton(
           onPressed: _apply,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6A3B39),
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
           child: const Text('Aplicar'),
         ),
       ],
