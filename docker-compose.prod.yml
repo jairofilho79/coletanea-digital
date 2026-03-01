@@ -1,5 +1,9 @@
 # Docker Compose para produção
 # Ambiente prod do coletanea-digital - conecta-se ao coldigom-prod via rede compartilhada
+#
+# As variáveis (POSTGRES_USER, POSTGRES_PASSWORD, etc.) vêm do env_file (backend/.env.prod).
+# NÃO são duplicadas na seção environment para evitar que defaults do host sobrescrevam o env_file.
+# A exceção é DATABASE_URL que precisa do hostname "db" (nome do container) em vez de "localhost".
 
 services:
   db:
@@ -7,16 +11,12 @@ services:
     container_name: coletanea_db_prod
     env_file:
       - backend/.env.prod
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-coletanea_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coletanea_password}
-      POSTGRES_DB: ${POSTGRES_DB:-coletanea_db}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coletanea_user} -d ${POSTGRES_DB:-coletanea_db}" ]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-coletanea_user} -d $${POSTGRES_DB:-coletanea_db}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -36,12 +36,9 @@ services:
     ports:
       - "${API_PORT:-8001}:8001"
     environment:
+      # Sobrescreve DATABASE_URL para usar hostname "db" (rede Docker) em vez de localhost
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-coletanea_user}:${POSTGRES_PASSWORD:-coletanea_prod_2026}@db:5432/${POSTGRES_DB:-coletanea_db}
       - ENVIRONMENT=prod
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-coletanea_user}:${POSTGRES_PASSWORD:-coletanea_password}@db:5432/${POSTGRES_DB:-coletanea_db}
-      - POSTGRES_USER=${POSTGRES_USER:-coletanea_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-coletanea_password}
-      - POSTGRES_DB=${POSTGRES_DB:-coletanea_db}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080,http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +55,6 @@ services:
 
 volumes:
   postgres_data_prod:
-
 
 networks:
   coldigom-coletanea-prod-network:

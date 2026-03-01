@@ -18,6 +18,12 @@ class TranslationService {
 
   TranslationService(this._remoteDataSource, this._localDataSource);
 
+  /// Código de idioma usado na API (coldigom tem en-US, pt-BR, etc.)
+  static String _apiLanguageCode(String languageCode) {
+    if (languageCode == 'en') return 'en-US';
+    return languageCode;
+  }
+
   /// Carrega todas as traduções para um idioma
   Future<void> loadTranslations(String languageCode) async {
     // Se já carregou para este idioma, não precisa carregar novamente
@@ -33,7 +39,8 @@ class TranslationService {
         _materialTypeTranslations.clear();
       }
 
-      // Tenta carregar do cache local primeiro
+      final apiLang = _apiLanguageCode(languageCode);
+      // Tenta carregar do cache local primeiro (mesma chave do idioma do app)
       final cachedMaterialKinds = _localDataSource.getCachedTranslations(languageCode, 'material_kind');
       final cachedPraiseTags = _localDataSource.getCachedTranslations(languageCode, 'praise_tag');
       final cachedMaterialTypes = _localDataSource.getCachedTranslations(languageCode, 'material_type');
@@ -42,9 +49,10 @@ class TranslationService {
       List<PraiseTagTranslationDto> praiseTagTranslations;
       List<MaterialTypeTranslationDto> materialTypeTranslations;
 
-      // Se cache existe, usa ele; senão busca da API
-      if (cachedMaterialKinds != null && 
-          cachedPraiseTags != null && 
+      // Só usa cache se existir e tiver dados (cache vazio = refetch para pegar seeds novos)
+      final hasValidMaterialKindsCache = cachedMaterialKinds != null && cachedMaterialKinds.isNotEmpty;
+      if (hasValidMaterialKindsCache &&
+          cachedPraiseTags != null &&
           cachedMaterialTypes != null) {
         // Converte cache para DTOs (apenas para popular cache em memória)
         materialKindTranslations = cachedMaterialKinds.entries.map((e) => 
@@ -74,11 +82,11 @@ class TranslationService {
           )
         ).toList();
       } else {
-        // Busca da API
+        // Busca da API (usa código normalizado: en -> en-US)
         final results = await Future.wait([
-          _remoteDataSource.getMaterialKindTranslations(languageCode),
-          _remoteDataSource.getPraiseTagTranslations(languageCode),
-          _remoteDataSource.getMaterialTypeTranslations(languageCode),
+          _remoteDataSource.getMaterialKindTranslations(apiLang),
+          _remoteDataSource.getPraiseTagTranslations(apiLang),
+          _remoteDataSource.getMaterialTypeTranslations(apiLang),
         ]);
 
         materialKindTranslations = results[0] as List<MaterialKindTranslationDto>;
@@ -120,9 +128,10 @@ class TranslationService {
 
       _isLoaded = true;
       _loadedLanguageCode = languageCode;
-    } catch (e) {
-      // Em caso de erro, mantém o estado anterior
-      // Os métodos helper vão usar o fallback
+    } catch (e, st) {
+      // Em caso de erro, mantém o estado anterior; os métodos helper usam o fallback
+      debugPrint('TranslationService.loadTranslations erro: $e');
+      debugPrint('$st');
     }
   }
 
