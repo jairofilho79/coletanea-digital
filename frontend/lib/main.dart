@@ -7,6 +7,9 @@ import 'core/theme/app_theme.dart';
 import 'core/storage/hive_service.dart';
 import 'core/storage/material_cache_service.dart';
 import 'core/storage/metadata_revalidation_bootstrap.dart';
+import 'core/storage/providers.dart';
+import 'features/praises/data/datasources/translation_cache_updater_impl.dart';
+import 'features/praises/presentation/providers/translation_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +31,14 @@ void main() async {
   await MaterialCacheService().init();
   
   runApp(
-    const ProviderScope(
-      child: ColetaneaDigitalApp(),
+    ProviderScope(
+      overrides: [
+        translationCacheUpdaterProvider.overrideWith((ref) {
+          final local = ref.watch(translationLocalDataSourceProvider);
+          return TranslationCacheUpdaterImpl(local);
+        }),
+      ],
+      child: const ColetaneaDigitalApp(),
     ),
   );
 }

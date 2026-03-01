@@ -5,6 +5,7 @@ import '../offline/offline_material_service.dart';
 import 'hive_service.dart';
 import 'material_cache_service.dart';
 import 'metadata_revalidation_runner.dart';
+import 'translation_cache_updater.dart';
 import '../../features/reader/data/services/material_content_service.dart';
 
 /// Provider for metadata box
@@ -64,8 +65,13 @@ final offlineMaterialServiceProvider = Provider<OfflineMaterialService>((ref) {
   return OfflineMaterialService(cache: cache);
 });
 
-/// Provider for metadata cache revalidation (manifest + diff + fetch alterados)
+/// Optional: app can override with a real implementation to enable translation sync from changelog.
+final translationCacheUpdaterProvider = Provider<TranslationCacheUpdater?>((ref) => null);
+
+/// Provider for metadata sync via Changelog API (version + delta)
 final metadataRevalidationRunnerProvider = Provider<MetadataRevalidationRunner>((ref) {
+  final changelogApi = ref.watch(changelogApiProvider);
   final client = ref.watch(coldigomClientProvider);
-  return MetadataRevalidationRunner(client);
+  final translationCache = ref.watch(translationCacheUpdaterProvider);
+  return MetadataRevalidationRunner(changelogApi, client, translationCache);
 });

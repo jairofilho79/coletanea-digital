@@ -46,6 +46,51 @@ class TranslationLocalDataSource {
     }
   }
 
+  /// Atualiza uma única entrada no cache (merge). Usado pelo changelog sync.
+  Future<void> mergeTranslationEntry(
+    String languageCode,
+    String type,
+    String entityId,
+    String translatedName,
+  ) async {
+    final key = _getCacheKey(languageCode, type);
+    final raw = _box.get(key);
+    final Map<String, String> data;
+    if (raw != null && raw is Map) {
+      final existing = raw['data'];
+      data = existing is Map
+          ? Map<String, String>.from(existing as Map)
+          : <String, String>{};
+    } else {
+      data = <String, String>{};
+    }
+    data[entityId] = translatedName;
+    await _box.put(key, {
+      'data': data,
+      'cachedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Remove uma entidade do cache de traduções para o [type] em todos os idiomas.
+  Future<void> removeTranslationEntryForEntity(String type, String entityId) async {
+    final prefix = 'translations:';
+    final suffix = ':$type';
+    for (final key in _box.keys) {
+      final k = key.toString();
+      if (!k.startsWith(prefix) || !k.endsWith(suffix)) continue;
+      final raw = _box.get(key);
+      if (raw == null || raw is! Map) continue;
+      final data = raw['data'];
+      if (data is! Map) continue;
+      final map = Map<String, String>.from(data);
+      map.remove(entityId);
+      await _box.put(key, {
+        'data': map,
+        'cachedAt': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
   /// Limpa cache de um idioma específico ou todos se languageCode for null
   Future<void> clearCache(String? languageCode) async {
     if (languageCode == null) {
