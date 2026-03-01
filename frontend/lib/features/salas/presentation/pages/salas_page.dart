@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../widgets/sala_card.dart';
@@ -27,41 +28,16 @@ class SalasPage extends ConsumerWidget {
       ),
       body: salas.when(
         data: (salasList) {
-          if (salasList.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.meeting_room,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nenhuma sala criada',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[400],
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Toque no botão + para criar uma nova sala',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[400],
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
-
           return ListView.builder(
             padding: const EdgeInsets.all(8),
-            itemCount: salasList.length,
+            itemCount: salasList.length + 1,
             itemBuilder: (context, index) {
-              final sala = salasList[index];
+              if (index == 0) {
+                return _CriarSalaRapidaCard(
+                  onTap: () => _criarSalaRapida(context, ref),
+                );
+              }
+              final sala = salasList[index - 1];
               return SalaCard(
                 sala: sala,
                 onTap: () => context.push('/salas/${sala.id}'),
@@ -96,136 +72,157 @@ class SalasPage extends ConsumerWidget {
     );
   }
 
-  void _showCreateSalaDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
+  Future<void> _criarSalaRapida(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+    final dd = now.day.toString().padLeft(2, '0');
+    final mm = now.month.toString().padLeft(2, '0');
+    final yyyy = now.year.toString();
+    final HH = now.hour.toString().padLeft(2, '0');
+    final min = now.minute.toString().padLeft(2, '0');
+    final name = 'Sala rápida $dd/$mm/$yyyy $HH:$min';
 
-    showDialog(
+    final sala = await ref.read(salaRepositoryProvider).createSala(
+          name: name,
+          description: null,
+        );
+    ref.invalidate(salasProvider);
+    if (context.mounted) {
+      context.push('/salas/${sala.id}');
+    }
+  }
+
+  void _showCreateSalaDialog(BuildContext context, WidgetRef ref) async {
+    final result = await AppDialog.input(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF4B2D2B), // Fundo vermelho (marrom avermelhado escuro)
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: Color(0xFFD4AF37), // Borda dourada
-            width: 2,
-          ),
+      title: 'Nova Sala',
+      fields: [
+        const AppDialogField(
+          key: 'name',
+          hint: 'Ex: Culto de domingo',
+          autofocus: true,
         ),
-        title: const Text(
-          'Nova Sala',
-          style: TextStyle(
-            color: Color(0xFFD4AF37), // Texto dourado no título
-            fontFamily: 'EB Garamond',
-            fontWeight: FontWeight.bold,
-          ),
+        const AppDialogField(
+          key: 'description',
+          hint: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
+          maxLines: 2,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Ex: Culto de domingo',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(
-                color: Color(0xFFD4AF37), // Texto dourado
+      ],
+    );
+    if (result != null && context.mounted) {
+      await ref.read(salaRepositoryProvider).createSala(
+            name: result['name']!,
+            description: result['description']!.isEmpty ? null : result['description'],
+          );
+      ref.invalidate(salasProvider);
+    }
+  }
+}
+
+class _CriarSalaRapidaCard extends StatelessWidget {
+  const _CriarSalaRapidaCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const strokeWidth = 2.0;
+    const radius = 12.0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _DashedBorderPainter(
+                color: const Color(0xFF6B6B6B),
+                strokeWidth: strokeWidth,
+                borderRadius: radius,
               ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                await ref.read(salaRepositoryProvider).createSala(
-                      name: nameController.text,
-                      description: descriptionController.text.isEmpty
-                          ? null
-                          : descriptionController.text,
-                    );
-                ref.invalidate(salasProvider);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              }
-            },
-            child: const Text('Criar'),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(radius),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      size: 28,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Criar Sala Rápida',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.borderRadius,
+    this.dashWidth = 6,
+    this.dashSpace = 4,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double borderRadius;
+  final double dashWidth;
+  final double dashSpace;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Radius.circular(borderRadius),
+        ),
+      );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final segment = metric.extractPath(
+          distance,
+          (distance + dashWidth).clamp(0, metric.length),
+        );
+        canvas.drawPath(segment, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

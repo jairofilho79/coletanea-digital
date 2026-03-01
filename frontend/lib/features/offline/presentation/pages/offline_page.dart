@@ -5,6 +5,7 @@ import '../../../../core/connectivity/connectivity_provider.dart';
 import '../../../../core/storage/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/offline/offline_material_service.dart';
 import '../../../../core/offline/offline_download_progress.dart';
@@ -152,6 +153,41 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
               )
             : null,
         title: AppBarTitleWithLogo.text('Materiais offline'),
+        actions: [
+          Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: const Color(0xFFD4AF37),
+              dividerTheme: const DividerThemeData(
+                color: Color(0xFFD4AF37),
+                thickness: 1,
+                space: 0,
+              ),
+            ),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              color: const Color(0xFF4B2D2B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(
+                  color: Color(0xFFD4AF37),
+                  width: 2,
+                ),
+              ),
+              onSelected: (value) {
+                if (value == 'clear_cache') _showClearCacheConfirmation();
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem<String>(
+                  value: 'clear_cache',
+                  child: Text(
+                    'Limpar cache',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -166,8 +202,6 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
                     _buildTotalSizeCard(),
                     const SizedBox(height: 16),
                     _buildCachedKindsList(translationService),
-                    const SizedBox(height: 24),
-                    _buildClearAllButton(),
                     const SizedBox(height: 24),
                     _buildDownloadSection(connectivity, translationService),
                   ],
@@ -356,38 +390,14 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
                   ),
                   leading: const Icon(Icons.delete_forever, color: Colors.red),
                   onTap: () async {
-                    final ok = await showDialog<bool>(
+                    final ok = await AppDialog.confirm(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: AppTheme.backgroundColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: AppTheme.primaryColor,
-                            width: 2,
-                          ),
-                        ),
-                        title: const Text(
-                          'Remover tipo',
-                          style: TextStyle(color: AppTheme.primaryColor),
-                        ),
-                        content: Text(
-                          'Remover todos os ${materials.length} materiais de "$displayName" do dispositivo?',
-                          style: const TextStyle(color: AppTheme.textColor),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Cancelar'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Remover', style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
+                      title: 'Remover tipo',
+                      message: 'Remover todos os ${materials.length} materiais de "$displayName" do dispositivo?',
+                      confirmLabel: 'Remover',
+                      isDestructive: true,
                     );
-                    if (ok == true && mounted) {
+                    if (ok && mounted) {
                       await ref.read(materialCacheServiceProvider).removeByMaterialKind(kindId);
                       await _refresh();
                     }
@@ -401,54 +411,19 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
     );
   }
 
-  Widget _buildClearAllButton() {
-    return OutlinedButton.icon(
-      onPressed: _cachedKindIds.isEmpty
-          ? null
-          : () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: AppTheme.backgroundColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(
-                      color: AppTheme.primaryColor,
-                      width: 2,
-                    ),
-                  ),
-                  title: const Text(
-                    'Limpar tudo',
-                    style: TextStyle(color: AppTheme.primaryColor),
-                  ),
-                  content: const Text(
-                    'Remover todos os materiais em cache do dispositivo?',
-                    style: TextStyle(color: AppTheme.textColor),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text('Cancelar'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Limpar', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-              if (ok == true && mounted) {
-                await ref.read(materialCacheServiceProvider).clearAllMaterials();
-                await _refresh();
-              }
-            },
-      icon: const Icon(Icons.delete_sweep),
-      label: const Text('Limpar todo o cache'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.red[700],
-        side: BorderSide(color: Colors.red[700]!),
-      ),
+  Future<void> _showClearCacheConfirmation() async {
+    final ok = await AppDialog.confirm(
+      context: context,
+      title: 'Limpar todo o cache',
+      message: 'Tem certeza que deseja limpar todo o cache da aplicação? '
+          'Você não terá mais nenhum material offline disponível.',
+      confirmLabel: 'Limpar',
+      isDestructive: true,
     );
+    if (ok && mounted) {
+      await ref.read(materialCacheServiceProvider).clearAllMaterials();
+      await _refresh();
+    }
   }
 
   Widget _buildDownloadSection(
@@ -495,28 +470,44 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
                   );
                 }
                 return Column(
-                  children: kinds.map((k) {
-                    final displayName =
-                        translationService.getMaterialKindName(k.id, k.name);
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        displayName,
-                        style: const TextStyle(color: AppTheme.textColor),
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: !isOnline
-                            ? null
-                            : () => _startDownload(k.id, k.name, displayName),
-                        child: const Text('Baixar todos'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.btnBackgroundColor,
-                          foregroundColor: AppTheme.textColor,
-                          side: const BorderSide(color: AppTheme.primaryColor),
+                  children: [
+                    for (int i = 0; i < kinds.length; i++) ...[
+                      if (i > 0)
+                        const Divider(
+                          color: Color(0xFFD4AF37),
+                          height: 1,
+                          thickness: 1,
+                        ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          translationService.getMaterialKindName(
+                            kinds[i].id,
+                            kinds[i].name,
+                          ),
+                          style: const TextStyle(color: AppTheme.textColor),
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: !isOnline
+                              ? null
+                              : () => _startDownload(
+                                    kinds[i].id,
+                                    kinds[i].name,
+                                    translationService.getMaterialKindName(
+                                      kinds[i].id,
+                                      kinds[i].name,
+                                    ),
+                                  ),
+                          child: const Text('Baixar todos'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.btnBackgroundColor,
+                            foregroundColor: AppTheme.textColor,
+                            side: const BorderSide(color: AppTheme.primaryColor),
+                          ),
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ],
+                  ],
                 );
               },
               loading: () => const Padding(
@@ -546,42 +537,29 @@ class _OfflinePageState extends ConsumerState<OfflinePage> {
     final service = ref.read(offlineMaterialServiceProvider);
 
     if (!mounted) return;
-    await showDialog<void>(
+    await AppDialog.progress(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppTheme.primaryColor, width: 2),
-        ),
-        title: Text(
-          'Baixando: $displayName',
-          style: const TextStyle(color: AppTheme.primaryColor, fontSize: 18),
-        ),
-        content: _DownloadDialogContent(
-          displayName: displayName,
-          materialKindId: materialKindId,
-          materialKindName: materialKindName,
-          service: service,
-          cancelToken: _downloadCancelToken!,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _downloadCancelToken?.cancel('user');
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Fechar'),
-          ),
-        ],
+      title: 'Baixando: $displayName',
+      content: _DownloadDialogContent(
+        displayName: displayName,
+        materialKindId: materialKindId,
+        materialKindName: materialKindName,
+        service: service,
+        cancelToken: _downloadCancelToken!,
       ),
+      actions: [
+        Builder(builder: (ctx) => TextButton(
+          onPressed: () {
+            _downloadCancelToken?.cancel('user');
+            Navigator.of(ctx).pop();
+          },
+          child: const Text('Cancelar', style: TextStyle(color: AppTheme.primaryColor)),
+        )),
+        Builder(builder: (ctx) => TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Fechar', style: TextStyle(color: AppTheme.primaryColor)),
+        )),
+      ],
     );
     if (mounted) await _refresh();
   }

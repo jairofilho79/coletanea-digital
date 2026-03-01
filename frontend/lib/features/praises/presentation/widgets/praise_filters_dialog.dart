@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../providers/praise_providers.dart';
 import '../providers/translation_providers.dart';
 
@@ -125,12 +127,21 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  static const _labelStyle = TextStyle(
+    fontWeight: FontWeight.w500,
+    color: Colors.white,
+  );
+
+  static const _inputDecoration = InputDecoration(
+    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  );
+
   @override
   Widget build(BuildContext context) {
     final tagsAsync = ref.watch(praiseTagsProvider);
 
-    return AlertDialog(
-      title: const Text('Filtros avançados'),
+    return AppDialog(
+      title: 'Filtros avançados',
       content: SingleChildScrollView(
         child: SizedBox(
           width: double.maxFinite,
@@ -138,29 +149,28 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Tag
-              const Text('Tag', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Tag', style: _labelStyle),
               const SizedBox(height: 4),
               tagsAsync.when(
                 data: (tags) {
-                  // Garante que as traduções foram carregadas
                   ref.watch(translationsLoadedProvider);
                   final translationService = ref.watch(translationServiceProvider);
-                  
                   final tagIds = tags.map((t) => t.id).toSet();
                   final selectedTagId = _tagId != null && tagIds.contains(_tagId) ? _tagId : null;
                   return DropdownButtonFormField<String?>(
                     initialValue: selectedTagId,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
+                    decoration: _inputDecoration,
+                    dropdownColor: AppTheme.cardColor,
+                    style: const TextStyle(color: AppTheme.textDark),
                     hint: const Text('Todos'),
                     items: [
                       const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
                       ...tags.map((t) {
                         final translatedName = translationService.getPraiseTagName(t.id, t.name);
-                        return DropdownMenuItem<String?>(value: t.id, child: Text(translatedName));
+                        return DropdownMenuItem<String?>(
+                          value: t.id,
+                          child: Text(translatedName),
+                        );
                       }),
                     ],
                     onChanged: (value) => setState(() => _tagId = value),
@@ -168,69 +178,64 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+                  child: Center(
+                    child: SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
                 ),
-                error: (_, _) => const Text('Erro ao carregar tags', style: TextStyle(color: Colors.red)),
+                error: (_, __) => const Text(
+                  'Erro ao carregar tags',
+                  style: TextStyle(color: Color(0xFFFF6B6B)),
+                ),
               ),
               const SizedBox(height: 16),
-
-              // Tom (tonality)
-              const Text('Tom', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Tom', style: _labelStyle),
               const SizedBox(height: 4),
               TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Todos',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
                 controller: _tonalityController,
+                style: const TextStyle(color: AppTheme.textDark),
+                decoration: _inputDecoration.copyWith(hintText: 'Todos'),
               ),
               const SizedBox(height: 16),
-
-              // Ritmo
-              const Text('Ritmo', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Ritmo', style: _labelStyle),
               const SizedBox(height: 4),
               TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Todos',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
                 controller: _rhythmController,
+                style: const TextStyle(color: AppTheme.textDark),
+                decoration: _inputDecoration.copyWith(hintText: 'Todos'),
               ),
               const SizedBox(height: 16),
-
-              // Categoria
-              const Text('Categoria', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Categoria', style: _labelStyle),
               const SizedBox(height: 4),
               TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Todos',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
                 controller: _categoryController,
+                style: const TextStyle(color: AppTheme.textDark),
+                decoration: _inputDecoration.copyWith(hintText: 'Todos'),
               ),
               const SizedBox(height: 16),
-
-              // Ordenar por
-              const Text('Ordenar por', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Ordenar por', style: _labelStyle),
               const SizedBox(height: 4),
               DropdownButtonFormField<String>(
                 initialValue: _sortBy,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
+                decoration: _inputDecoration,
+                dropdownColor: const Color(0xFFF5E6D3),
+                style: const TextStyle(color: AppTheme.textDark),
                 items: const [
                   DropdownMenuItem(value: 'name', child: Text('Nome')),
-                  DropdownMenuItem(value: 'number', child: Text('Número (sem número por último)')),
+                  DropdownMenuItem(
+                    value: 'number',
+                    child: Text('Número (sem número por último)'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _sortBy = value ?? 'name'),
               ),
               const SizedBox(height: 16),
-
-              // Buscar na letra
               Row(
                 children: [
                   SizedBox(
@@ -240,12 +245,17 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
                       value: _searchInLyrics,
                       onChanged: (value) => setState(() => _searchInLyrics = value ?? false),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      activeColor: const Color(0xFFD4AF37),
+                      checkColor: const Color(0xFF4B2D2B),
                     ),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => setState(() => _searchInLyrics = !_searchInLyrics),
-                    child: Text('Buscar na letra', style: Theme.of(context).textTheme.bodyMedium),
+                    child: const Text(
+                      'Buscar na letra',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -256,14 +266,28 @@ class _PraiseFiltersDialogState extends ConsumerState<PraiseFiltersDialog> {
       actions: [
         TextButton(
           onPressed: _clearFilters,
-          child: const Text('Limpar filtros'),
+          child: const Text(
+            'Limpar filtros',
+            style: TextStyle(color: Color(0xFFD4AF37)),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: const Text(
+            'Cancelar',
+            style: TextStyle(color: Color(0xFFD4AF37)),
+          ),
         ),
-        FilledButton(
+        ElevatedButton(
           onPressed: _apply,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF6A3B39),
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
           child: const Text('Aplicar'),
         ),
       ],

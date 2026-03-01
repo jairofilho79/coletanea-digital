@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'connectivity/connectivity_provider.dart';
-import 'storage/providers.dart';
+import '../connectivity/connectivity_provider.dart';
+import 'providers.dart';
 
 /// Dispara revalidação do cache de metadados ao iniciar o app (se online) e
 /// quando a conectividade passar de offline para online.

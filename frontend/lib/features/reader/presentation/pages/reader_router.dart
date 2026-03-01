@@ -6,44 +6,54 @@ import 'lyrics_reader_page.dart';
 
 /// Roteador para abrir o leitor apropriado baseado no tipo de material
 class ReaderRouter {
-  /// Abre o leitor apropriado para o material
+  /// Abre o leitor apropriado para o material.
+  /// Prioriza a extensão do arquivo para evitar abrir PDF/áudio como letra quando
+  /// o materialType vem incorreto (ex. "Letra") da API.
   static Widget getReaderPage({
     required PraiseMaterial material,
     String? materialName,
   }) {
-    // Determina o tipo de material baseado no material_type ou extensão do arquivo
     final extension = _getFileExtension(material.path);
+    final path = material.path;
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
 
-    if (materialTypeName.contains('pdf') || extension == 'pdf') {
+    if (extension == 'pdf' || path.toLowerCase().contains('.pdf')) {
       return PdfReaderPage(
         materialId: material.id,
         materialPath: material.path,
         materialName: materialName,
       );
-    } else if (materialTypeName.contains('audio') ||
-        ['mp3', 'wav', 'ogg', 'm4a'].contains(extension)) {
+    }
+    if (['mp3', 'wav', 'ogg', 'm4a'].contains(extension) ||
+        materialTypeName.contains('audio')) {
       return AudioReaderPage(
         materialId: material.id,
         materialPath: material.path,
         materialName: materialName,
       );
-    } else if (materialTypeName.contains('text') ||
+    }
+    if (materialTypeName.contains('text') ||
         materialTypeName.contains('lyric') ||
+        materialTypeName == 'letra' ||
         ['txt', 'md'].contains(extension)) {
       return LyricsReaderPage(
         materialId: material.id,
         materialPath: material.path,
         materialName: materialName,
       );
-    } else {
-      // Fallback: tenta abrir como texto
-      return LyricsReaderPage(
+    }
+    if (materialTypeName.contains('pdf')) {
+      return PdfReaderPage(
         materialId: material.id,
         materialPath: material.path,
         materialName: materialName,
       );
     }
+    return LyricsReaderPage(
+      materialId: material.id,
+      materialPath: material.path,
+      materialName: materialName,
+    );
   }
 
   static String _getFileExtension(String path) {

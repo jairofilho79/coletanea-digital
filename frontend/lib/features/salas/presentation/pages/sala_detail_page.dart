@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/sala_providers.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
@@ -101,29 +103,14 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
   }
 
   Future<void> _delete(Sala sala) async {
-    final ok = await showDialog<bool>(
+    final ok = await AppDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir sala'),
-        content: Text(
-          'Excluir a sala "${sala.name}"? Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      title: 'Excluir sala',
+      message: 'Excluir a sala "${sala.name}"? Esta ação não pode ser desfeita.',
+      confirmLabel: 'Excluir',
+      isDestructive: true,
     );
-    if (ok == true && mounted) {
+    if (ok && mounted) {
       await ref.read(salaRepositoryProvider).deleteSala(sala.id);
       ref.invalidate(salasProvider);
       if (mounted) context.go('/salas');
@@ -243,6 +230,9 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
   }
 
   Widget _buildLouvoresTab(BuildContext context, Sala sala) {
+    final enrichedAsync = ref.watch(salaWithEnrichedPraisesProvider(widget.salaId));
+    final listItems = enrichedAsync.value?.praises ?? sala.praises;
+
     return Column(
       children: [
         Padding(
@@ -411,7 +401,7 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
         const Divider(height: 1),
         Expanded(
           child: ReorderablePraiseList(
-            items: sala.praises,
+            items: listItems,
             emptyMessage: 'Nenhum louvor na sala.',
             emptyInstruction: 'Toque no botão abaixo para adicionar louvores.',
             emptyActionLabel: 'Adicionar louvores',
@@ -423,11 +413,13 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
                     newIndex,
                   );
               ref.invalidate(salaProvider(widget.salaId));
+              ref.invalidate(salaWithEnrichedPraisesProvider(widget.salaId));
               ref.invalidate(salasProvider);
             },
             onRemove: (praiseId) async {
               await ref.read(salaRepositoryProvider).removePraise(sala.id, praiseId);
               ref.invalidate(salaProvider(widget.salaId));
+              ref.invalidate(salaWithEnrichedPraisesProvider(widget.salaId));
               ref.invalidate(salasProvider);
               ref.invalidate(playlistMateriaisProvider(PlaylistParams(salaId: sala.id)));
             },
@@ -685,173 +677,141 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
     }
 
     if (context.mounted) {
-      await showDialog(
+      await AppDialog.show(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF4B2D2B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(
-              color: Color(0xFFD4AF37),
-              width: 2,
-            ),
-          ),
-          title: const Text(
-            'Importar lista',
-            style: TextStyle(
-              color: Color(0xFFD4AF37),
-              fontFamily: 'EB Garamond',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Consumer(
-              builder: (context, ref, _) {
-                final listasAsync = ref.watch(listasProvider);
-                return listasAsync.when(
-                  data: (listasData) {
-                    if (listasData.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'Nenhuma lista disponível para importar',
-                          style: TextStyle(color: Colors.grey[400]),
-                        ),
-                      );
-                    }
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: listasData.length,
-                      itemBuilder: (context, index) {
-                        final lista = listasData[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5E6D3),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
+        title: 'Importar lista',
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Consumer(
+            builder: (context, ref, _) {
+              final listasAsync = ref.watch(listasProvider);
+              return listasAsync.when(
+                data: (listasData) {
+                  if (listasData.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Nenhuma lista disponível para importar',
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: listasData.length,
+                    itemBuilder: (context, index) {
+                      final lista = listasData[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardColor,
+                          border: Border.all(
+                            color: AppTheme.primaryColor,
+                            width: 2,
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () async {
-                                await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
-                                ref.invalidate(salaProvider(widget.salaId));
-                                ref.invalidate(salasProvider);
-                                if (ctx.mounted) {
-                                  Navigator.of(ctx).pop();
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text('${lista.praises.length} louvor(es) importado(s)'),
-                                    ),
-                                  );
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(10),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.list,
-                                      color: const Color(0xFFD4AF37),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            lista.name,
-                                            style: const TextStyle(
-                                              color: Color(0xFF5A2A2A),
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              await ref.read(salaRepositoryProvider).importFromLista(sala.id, lista);
+                              ref.invalidate(salaProvider(widget.salaId));
+                              ref.invalidate(salasProvider);
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${lista.praises.length} louvor(es) importado(s)'),
+                                  ),
+                                );
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.list,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          lista.name,
+                                          style: const TextStyle(
+                                            color: AppTheme.titleColor,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${lista.praises.length} louvor(es)',
-                                            style: const TextStyle(
-                                              color: Color(0xFF5A5A5A),
-                                              fontSize: 12,
-                                            ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${lista.praises.length} louvor(es)',
+                                          style: const TextStyle(
+                                            color: AppTheme.textSecondaryColor,
+                                            fontSize: 12,
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(),
-                    ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
                   ),
-                  error: (e, _) => Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'Erro ao carregar listas: $e',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
+                ),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Erro ao carregar listas: $e',
+                    style: TextStyle(color: Colors.grey[400]),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text(
-                'Fechar',
-                style: TextStyle(color: Color(0xFFD4AF37)),
-              ),
-            ),
-          ],
         ),
+        actions: [
+          Builder(builder: (ctx) => TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              'Fechar',
+              style: TextStyle(color: AppTheme.primaryColor),
+            ),
+          )),
+        ],
       );
     }
   }
 
   Future<void> _handleClearPraises(BuildContext context, Sala sala) async {
-    final ok = await showDialog<bool>(
+    final ok = await AppDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Limpar lista'),
-        content: const Text(
-          'Remover todos os louvores desta sala? Esta ação também removerá todos os materiais da playlist.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Limpar'),
-          ),
-        ],
-      ),
+      title: 'Limpar lista',
+      message: 'Remover todos os louvores desta sala? Esta ação também removerá todos os materiais da playlist.',
+      confirmLabel: 'Limpar',
+      isDestructive: true,
     );
-    
-    if (ok == true && mounted) {
+
+    if (ok && mounted) {
       await ref.read(salaRepositoryProvider).clearPraises(sala.id);
       // Invalida todos os providers relacionados
       ref.invalidate(salaProvider(widget.salaId));
@@ -886,212 +846,105 @@ class _SalaDetailPageState extends ConsumerState<SalaDetailPage>
       return;
     }
 
-    await showDialog(
+    await AppDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Salvar como lista'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Esta sala foi importada da lista "${listaImportada.name}".',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            const Text('Escolha uma opção:'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
+      title: 'Salvar como lista',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Esta sala foi importada da lista "${listaImportada.name}".',
+            style: const TextStyle(color: AppTheme.textColor),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await _showCreateListaFromSalaDialog(context, sala);
-            },
-            child: const Text('Salvar como nova lista'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              try {
-                final listaId = sala.importedFromListaId!;
-                await ref.read(salaRepositoryProvider).overwriteImportedLista(sala.id);
-                ref.invalidate(listasProvider);
-                ref.invalidate(listaProvider(listaId));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Lista "${listaImportada.name}" atualizada com sucesso'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erro ao atualizar lista: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Sobrescrever lista importada'),
-          ),
+          const SizedBox(height: 16),
+          const Text('Escolha uma opção:', style: TextStyle(color: AppTheme.textColor)),
         ],
       ),
+      actions: [
+        Builder(builder: (ctx) => AppDialog.cancelButton(ctx)),
+        Builder(builder: (ctx) => TextButton(
+          onPressed: () async {
+            Navigator.of(ctx).pop();
+            await _showCreateListaFromSalaDialog(context, sala);
+          },
+          child: const Text('Salvar como nova lista', style: TextStyle(color: AppTheme.primaryColor)),
+        )),
+        Builder(builder: (ctx) => AppDialog.actionButton(
+          ctx,
+          label: 'Sobrescrever lista importada',
+          onPressed: () async {
+            Navigator.of(ctx).pop();
+            try {
+              final listaId = sala.importedFromListaId!;
+              await ref.read(salaRepositoryProvider).overwriteImportedLista(sala.id);
+              ref.invalidate(listasProvider);
+              ref.invalidate(listaProvider(listaId));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Lista "${listaImportada.name}" atualizada com sucesso'),
+                  ),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro ao atualizar lista: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        )),
+      ],
     );
   }
 
   Future<void> _showCreateListaFromSalaDialog(BuildContext context, Sala sala) async {
-    final nameController = TextEditingController(text: sala.name);
-    final descriptionController = TextEditingController(text: sala.description ?? '');
-
-    await showDialog(
+    final result = await AppDialog.input(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF4B2D2B), // Fundo vermelho (marrom avermelhado escuro)
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: Color(0xFFD4AF37), // Borda dourada
-            width: 2,
-          ),
+      title: 'Nova Lista',
+      fields: [
+        AppDialogField(
+          key: 'name',
+          hint: 'Ex: Louvores de domingo',
+          initialValue: sala.name,
+          autofocus: true,
         ),
-        title: const Text(
-          'Nova Lista',
-          style: TextStyle(
-            color: Color(0xFFD4AF37), // Texto dourado no título
-            fontFamily: 'EB Garamond',
-            fontWeight: FontWeight.bold,
-          ),
+        AppDialogField(
+          key: 'description',
+          hint: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
+          initialValue: sala.description ?? '',
+          maxLines: 2,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Ex: Louvores de domingo',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(
-                color: Color(0xFFD4AF37), // Texto dourado
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                try {
-                  await ref.read(salaRepositoryProvider).saveAsLista(
-                        salaId: sala.id,
-                        name: nameController.text,
-                        description: descriptionController.text.isEmpty
-                            ? null
-                            : descriptionController.text,
-                      );
-                  ref.invalidate(listasProvider);
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lista criada com sucesso')),
-                    );
-                  }
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                        content: Text('Erro ao criar lista: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            child: const Text('Criar'),
-          ),
-        ],
-      ),
+      ],
     );
+    if (result != null && context.mounted) {
+      try {
+        await ref.read(salaRepositoryProvider).saveAsLista(
+              salaId: sala.id,
+              name: result['name']!,
+              description: result['description']!.isEmpty ? null : result['description'],
+            );
+        ref.invalidate(listasProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lista criada com sucesso')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao criar lista: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

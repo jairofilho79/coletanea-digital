@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/lista_providers.dart';
 import '../widgets/reorderable_praise_list.dart';
@@ -71,48 +72,14 @@ class _ListaDetailPageState extends ConsumerState<ListaDetailPage> {
   }
 
   Future<void> _confirmDelete(Lista lista) async {
-    final ok = await showDialog<bool>(
+    final ok = await AppDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF4B2D2B),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: Color(0xFFD4AF37),
-            width: 2,
-          ),
-        ),
-        title: const Text(
-          'Excluir lista',
-          style: TextStyle(
-            color: Color(0xFFD4AF37),
-            fontFamily: 'EB Garamond',
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Excluir a lista "${lista.name}"? Esta ação não pode ser desfeita.',
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Color(0xFFD4AF37)),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      title: 'Excluir lista',
+      message: 'Excluir a lista "${lista.name}"? Esta ação não pode ser desfeita.',
+      confirmLabel: 'Excluir',
+      isDestructive: true,
     );
-    if (ok == true && mounted) {
+    if (ok && mounted) {
       await ref.read(listaRepositoryProvider).deleteLista(lista.id);
       ref.invalidate(listasProvider);
       if (mounted) context.go('/listas');

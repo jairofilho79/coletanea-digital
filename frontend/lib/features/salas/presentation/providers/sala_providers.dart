@@ -5,6 +5,8 @@ import '../../data/repositories/sala_repository.dart';
 import '../../data/repositories/playlist_materiais_repository.dart';
 import '../../../../core/storage/hive_service.dart';
 import 'package:uuid/uuid.dart';
+import '../../../listas/domain/entities/lista.dart';
+import '../../../praises/presentation/providers/praise_providers.dart';
 
 /// Provider do repositório de salas
 final salaRepositoryProvider = Provider<SalaRepository>((ref) {
@@ -41,6 +43,25 @@ final salasProvider = FutureProvider<List<Sala>>((ref) async {
 final salaProvider = FutureProvider.family<Sala?, String>((ref, id) async {
   final repository = ref.watch(salaRepositoryProvider);
   return repository.getSalaById(id);
+});
+
+/// Sala com praises enriquecidos (dados completos, incluindo tags) para exibição na lista.
+/// Usa o repositório de praises para carregar cada louvor com tags e demais campos.
+final salaWithEnrichedPraisesProvider =
+    FutureProvider.family<Sala?, String>((ref, id) async {
+  final sala = await ref.watch(salaProvider(id).future);
+  if (sala == null || sala.praises.isEmpty) return sala;
+  final praiseRepo = ref.watch(praiseRepositoryProvider);
+  final enriched = <PraiseListItem>[];
+  for (final item in sala.praises) {
+    try {
+      final fullPraise = await praiseRepo.getPraiseById(item.praise.id);
+      enriched.add(PraiseListItem(praise: fullPraise, order: item.order));
+    } catch (_) {
+      enriched.add(item);
+    }
+  }
+  return sala.copyWith(praises: enriched);
 });
 
 /// Provider para playlist de materiais ordenada

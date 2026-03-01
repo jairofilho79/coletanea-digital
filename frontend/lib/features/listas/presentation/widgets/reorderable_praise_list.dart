@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/lista.dart';
 import '../../../praises/domain/entities/praise.dart';
+import '../../../praises/presentation/providers/translation_providers.dart';
 
 /// Lista reordenável de louvores. Usado em detalhes de Lista e de Sala.
-class ReorderablePraiseList extends StatelessWidget {
+class ReorderablePraiseList extends ConsumerWidget {
   const ReorderablePraiseList({
     super.key,
     required this.items,
@@ -26,7 +28,7 @@ class ReorderablePraiseList extends StatelessWidget {
   final VoidCallback onEmptyActionPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (items.isEmpty) {
       return Center(
         child: Column(
@@ -88,6 +90,7 @@ class ReorderablePraiseList extends StatelessWidget {
           key: ValueKey('${item.praise.id}_${index}_${item.order}'),
           index: index,
           item: item,
+          ref: ref,
           onRemove: () async => await onRemove(item.praise.id),
           onTap: () => onTap(item.praise),
         );
@@ -99,6 +102,7 @@ class ReorderablePraiseList extends StatelessWidget {
 class _PraiseListTile extends StatelessWidget {
   final int index;
   final PraiseListItem item;
+  final WidgetRef ref;
   final Future<void> Function() onRemove;
   final VoidCallback onTap;
 
@@ -106,12 +110,17 @@ class _PraiseListTile extends StatelessWidget {
     super.key,
     required this.index,
     required this.item,
+    required this.ref,
     required this.onRemove,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(translationsLoadedProvider);
+    final translationService = ref.watch(translationServiceProvider);
+    final praise = item.praise;
+
     return Container(
       key: key,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -129,34 +138,77 @@ class _PraiseListTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(10),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ReorderableDragStartListener(
                   index: index,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.grab,
-                    child: Icon(
-                      Icons.drag_handle,
-                      color: const Color(0xFFD4AF37),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.drag_handle,
+                        color: const Color(0xFFD4AF37),
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    item.praise.displayName,
-                    style: const TextStyle(
-                      color: Color(0xFF5A2A2A),
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'EB Garamond',
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        praise.displayName,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: const Color(0xFF5A2A2A),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (praise.tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: praise.tags.map((tag) {
+                            final translatedName = translationService
+                                .getPraiseTagName(tag.id, tag.name);
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5E6D3),
+                                border: Border.all(
+                                  color: const Color(0xFFD4AF37),
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                translatedName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF1A1A1A),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
                   color: const Color(0xFFD4AF37),
                   onPressed: onRemove,
-                  tooltip: 'Remover',
+                  tooltip: 'Remover da lista',
                 ),
               ],
             ),

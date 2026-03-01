@@ -707,15 +707,29 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                             children: [
                               OutlinedButton.icon(
                                 onPressed: _currentPage > 0 ? _previousPage : null,
-                                icon: const Icon(Icons.chevron_left),
-                                label: const Text('Anterior'),
+                                icon: Icon(
+                                  Icons.chevron_left,
+                                  color: _currentPage > 0
+                                      ? const Color(0xFFD4AF37)
+                                      : const Color(0xFFBDBDBD).withOpacity(0.5),
+                                ),
+                                label: Text(
+                                  'Anterior',
+                                  style: TextStyle(
+                                    color: _currentPage > 0
+                                        ? const Color(0xFFD4AF37)
+                                        : const Color(0xFFBDBDBD).withOpacity(0.5),
+                                  ),
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
                                     color: _currentPage > 0
                                         ? const Color(0xFFD4AF37)
-                                        : Colors.grey,
+                                        : const Color(0xFFBDBDBD),
                                   ),
-                                  foregroundColor: const Color(0xFFD4AF37),
+                                  foregroundColor: _currentPage > 0
+                                      ? const Color(0xFFD4AF37)
+                                      : const Color(0xFFBDBDBD).withOpacity(0.5),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -741,15 +755,29 @@ class _LyricsReaderPageState extends ConsumerState<LyricsReaderPage> {
                               const SizedBox(width: 16),
                               OutlinedButton.icon(
                                 onPressed: _currentPage < _pages.length - 1 ? _nextPage : null,
-                                icon: const Icon(Icons.chevron_right),
-                                label: const Text('Próxima'),
+                                icon: Icon(
+                                  Icons.chevron_right,
+                                  color: _currentPage < _pages.length - 1
+                                      ? const Color(0xFFD4AF37)
+                                      : const Color(0xFFBDBDBD).withOpacity(0.5),
+                                ),
+                                label: Text(
+                                  'Próxima',
+                                  style: TextStyle(
+                                    color: _currentPage < _pages.length - 1
+                                        ? const Color(0xFFD4AF37)
+                                        : const Color(0xFFBDBDBD).withOpacity(0.5),
+                                  ),
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
                                     color: _currentPage < _pages.length - 1
                                         ? const Color(0xFFD4AF37)
-                                        : Colors.grey,
+                                        : const Color(0xFFBDBDBD),
                                   ),
-                                  foregroundColor: const Color(0xFFD4AF37),
+                                  foregroundColor: _currentPage < _pages.length - 1
+                                      ? const Color(0xFFD4AF37)
+                                      : const Color(0xFFBDBDBD).withOpacity(0.5),
                                 ),
                               ),
                             ],

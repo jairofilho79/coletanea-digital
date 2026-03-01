@@ -7,6 +7,7 @@ import '../../../../core/utils/youtube_utils.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../listas/presentation/providers/lista_providers.dart';
 import '../../../salas/presentation/providers/sala_providers.dart';
 import '../../../salas/domain/entities/playlist_material.dart';
@@ -111,172 +112,174 @@ class PraiseDetailPage extends ConsumerWidget {
   }
 
   static void _showAddToListaDialog(BuildContext context, WidgetRef ref, Praise praise) {
-    showDialog<void>(
+    AppDialog.show(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Adicionar à lista'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Consumer(
-            builder: (ctx, ref, _) {
-              final listasAsync = ref.watch(listasProvider);
-              return listasAsync.when(
-                data: (listas) {
-                  if (listas.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Nenhuma lista criada. Crie uma lista em "Listas".'),
+      title: 'Adicionar à lista',
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Consumer(
+          builder: (ctx, ref, _) {
+            final listasAsync = ref.watch(listasProvider);
+            return listasAsync.when(
+              data: (listas) {
+                if (listas.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Nenhuma lista criada. Crie uma lista em "Listas".',
+                      style: TextStyle(color: AppTheme.textColor),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: listas.length,
+                  itemBuilder: (context, index) {
+                    final lista = listas[index];
+                    final existingIndex = lista.praises.indexWhere(
+                      (e) => e.praise.id == praise.id,
                     );
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: listas.length,
-                    itemBuilder: (context, index) {
-                      final lista = listas[index];
-                      final existingIndex = lista.praises.indexWhere(
-                        (e) => e.praise.id == praise.id,
-                      );
-                      final alreadyInList = existingIndex != -1;
-                      final position = alreadyInList ? existingIndex + 1 : null;
-                      
-                      return ListTile(
-                        leading: const Icon(Icons.list),
-                        title: Text(lista.name),
-                        subtitle: Text(
-                          alreadyInList 
-                              ? 'Já está nesta lista (posição $position)'
-                              : '${lista.praises.length} louvor(es)',
-                        ),
-                        trailing: alreadyInList ? const Icon(Icons.check, color: Colors.green) : null,
-                        onTap: () async {
-                          if (alreadyInList) {
-                            // Mostra mensagem informando que já está na lista
-                            if (dialogContext.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'O louvor "${praise.displayName}" já se encontra na lista "${lista.name}", na posição $position',
-                                  ),
-                                  duration: const Duration(seconds: 3),
+                    final alreadyInList = existingIndex != -1;
+                    final position = alreadyInList ? existingIndex + 1 : null;
+
+                    return ListTile(
+                      leading: const Icon(Icons.list, color: AppTheme.primaryColor),
+                      title: Text(lista.name, style: const TextStyle(color: AppTheme.textColor)),
+                      subtitle: Text(
+                        alreadyInList
+                            ? 'Já está nesta lista (posição $position)'
+                            : '${lista.praises.length} louvor(es)',
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+                      trailing: alreadyInList ? const Icon(Icons.check, color: Colors.green) : null,
+                      onTap: () async {
+                        if (alreadyInList) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'O louvor "${praise.displayName}" já se encontra na lista "${lista.name}", na posição $position',
                                 ),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } else {
+                          final repo = ref.read(listaRepositoryProvider);
+                          final current = repo.getListaById(lista.id);
+                          if (current != null) {
+                            final updated = current.addPraise(praise);
+                            await repo.updateLista(updated);
+                            ref.invalidate(listaProvider(lista.id));
+                            ref.invalidate(listasProvider);
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Adicionado à lista "${lista.name}"')),
                               );
                             }
-                          } else {
-                            // Adiciona o louvor à lista
-                            final repo = ref.read(listaRepositoryProvider);
-                            final current = repo.getListaById(lista.id);
-                            if (current != null) {
-                              final updated = current.addPraise(praise);
-                              await repo.updateLista(updated);
-                              ref.invalidate(listaProvider(lista.id));
-                              ref.invalidate(listasProvider);
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Adicionado à lista "${lista.name}"')),
-                                );
-                              }
-                            }
                           }
-                        },
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text('Erro ao carregar listas: $e'),
-                ),
-              );
-            },
-          ),
+              ),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Erro ao carregar listas: $e', style: const TextStyle(color: AppTheme.textColor)),
+              ),
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Fechar'),
-          ),
-        ],
       ),
+      actions: [
+        Builder(builder: (ctx) => TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Fechar', style: TextStyle(color: AppTheme.primaryColor)),
+        )),
+      ],
     );
   }
 
   static void _showAddToSalaDialog(BuildContext context, WidgetRef ref, Praise praise) {
-    showDialog<void>(
+    AppDialog.show(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Adicionar à sala'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Consumer(
-            builder: (ctx, ref, _) {
-              final salasAsync = ref.watch(salasProvider);
-              return salasAsync.when(
-                data: (salas) {
-                  if (salas.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Nenhuma sala criada. Crie uma sala em "Salas".'),
-                    );
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: salas.length,
-                    itemBuilder: (context, index) {
-                      final sala = salas[index];
-                      final alreadyInSala = sala.praises.any((e) => e.praise.id == praise.id);
-                      return ListTile(
-                        leading: const Icon(Icons.meeting_room),
-                        title: Text(sala.name),
-                        subtitle: Text(
-                          alreadyInSala ? 'Já está nesta sala' : '${sala.praises.length} louvor(es)',
-                        ),
-                        trailing: alreadyInSala ? const Icon(Icons.check, color: Colors.green) : null,
-                        onTap: alreadyInSala
-                            ? null
-                            : () async {
-                                final repo = ref.read(salaRepositoryProvider);
-                                await repo.addPraise(sala.id, praise);
-                                ref.invalidate(salaProvider(sala.id));
-                                ref.invalidate(salasProvider);
-                                if (dialogContext.mounted) {
-                                  Navigator.of(dialogContext).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Adicionado à sala "${sala.name}"')),
-                                  );
-                                }
-                              },
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(
-                  child: Padding(
+      title: 'Adicionar à sala',
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Consumer(
+          builder: (ctx, ref, _) {
+            final salasAsync = ref.watch(salasProvider);
+            return salasAsync.when(
+              data: (salas) {
+                if (salas.isEmpty) {
+                  return const Padding(
                     padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
+                    child: Text(
+                      'Nenhuma sala criada. Crie uma sala em "Salas".',
+                      style: TextStyle(color: AppTheme.textColor),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: salas.length,
+                  itemBuilder: (context, index) {
+                    final sala = salas[index];
+                    final alreadyInSala = sala.praises.any((e) => e.praise.id == praise.id);
+                    return ListTile(
+                      leading: const Icon(Icons.meeting_room, color: AppTheme.primaryColor),
+                      title: Text(sala.name, style: const TextStyle(color: AppTheme.textColor)),
+                      subtitle: Text(
+                        alreadyInSala ? 'Já está nesta sala' : '${sala.praises.length} louvor(es)',
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+                      trailing: alreadyInSala ? const Icon(Icons.check, color: Colors.green) : null,
+                      onTap: alreadyInSala
+                          ? null
+                          : () async {
+                              final repo = ref.read(salaRepositoryProvider);
+                              await repo.addPraise(sala.id, praise);
+                              ref.invalidate(salaProvider(sala.id));
+                              ref.invalidate(salasProvider);
+                              if (ctx.mounted) {
+                                Navigator.of(ctx).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Adicionado à sala "${sala.name}"')),
+                                );
+                              }
+                            },
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text('Erro ao carregar salas: $e'),
-                ),
-              );
-            },
-          ),
+              ),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Erro ao carregar salas: $e', style: const TextStyle(color: AppTheme.textColor)),
+              ),
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Fechar'),
-          ),
-        ],
       ),
+      actions: [
+        Builder(builder: (ctx) => TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Fechar', style: TextStyle(color: AppTheme.primaryColor)),
+        )),
+      ],
     );
   }
 
@@ -557,16 +560,27 @@ class _MaterialCard extends ConsumerWidget {
     return name.contains('youtube');
   }
 
+  String _getPathExtension() {
+    final p = material.path;
+    return p.contains('.') ? p.split('.').last.toLowerCase() : '';
+  }
+
   IconData _getMaterialIcon() {
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
-    if (materialTypeName.contains('pdf')) {
+    final ext = _getPathExtension();
+    if (materialTypeName.contains('pdf') || ext == 'pdf') {
       return Icons.picture_as_pdf;
-    } else if (materialTypeName.contains('youtube')) {
-      return Icons.play_circle_fill; // fallback se FaIcon não for usado
-    } else if (materialTypeName.contains('audio')) {
+    }
+    if (materialTypeName.contains('youtube')) {
+      return Icons.play_circle_fill;
+    }
+    if (materialTypeName.contains('audio') ||
+        ['mp3', 'wav', 'ogg', 'm4a'].contains(ext)) {
       return Icons.audiotrack;
-    } else if (materialTypeName.contains('text') ||
-        materialTypeName.contains('lyric')) {
+    }
+    if (materialTypeName.contains('text') ||
+        materialTypeName.contains('lyric') ||
+        materialTypeName == 'letra') {
       return Icons.text_snippet;
     }
     return Icons.description;
@@ -574,14 +588,20 @@ class _MaterialCard extends ConsumerWidget {
 
   Color _getMaterialColor(BuildContext context) {
     final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
-    if (materialTypeName.contains('pdf')) {
-      return Colors.orange; // Laranja para PDF
-    } else if (materialTypeName.contains('youtube')) {
+    final ext = _getPathExtension();
+    if (materialTypeName.contains('pdf') || ext == 'pdf') {
+      return Colors.orange;
+    }
+    if (materialTypeName.contains('youtube')) {
       return Colors.red;
-    } else if (materialTypeName.contains('audio')) {
+    }
+    if (materialTypeName.contains('audio') ||
+        ['mp3', 'wav', 'ogg', 'm4a'].contains(ext)) {
       return Colors.blue;
-    } else if (materialTypeName.contains('text') ||
-        materialTypeName.contains('lyric')) {
+    }
+    if (materialTypeName.contains('text') ||
+        materialTypeName.contains('lyric') ||
+        materialTypeName == 'letra') {
       return Colors.green;
     }
     return Colors.grey;
@@ -623,14 +643,20 @@ class _MaterialCard extends ConsumerWidget {
 
           // Se há salaId e o material é PDF ou Lyrics, adiciona à playlist
           if (salaId != null) {
-            final materialTypeName = material.materialType?.name.toLowerCase() ?? '';
-            final isPdf = materialTypeName.contains('pdf');
-            final isLyrics = materialTypeName.contains('text') || 
-                            materialTypeName.contains('lyric') ||
-                            (material.path.length > 100 && 
-                             !material.path.contains('.pdf') && 
-                             !material.path.contains('.mp3'));
-            
+            final pathForPlaylist = material.path;
+            final ext = pathForPlaylist.contains('.')
+                ? pathForPlaylist.split('.').last.toLowerCase()
+                : '';
+            final isPdf = materialTypeName.contains('pdf') ||
+                ext == 'pdf' ||
+                pathForPlaylist.toLowerCase().contains('.pdf');
+            final isLyrics = materialTypeName.contains('text') ||
+                materialTypeName.contains('lyric') ||
+                materialTypeName == 'letra' ||
+                (pathForPlaylist.length > 100 &&
+                    !pathForPlaylist.contains('.pdf') &&
+                    !pathForPlaylist.contains('.mp3'));
+
             if (isPdf || isLyrics) {
               final participanteId = await ref.read(participanteIdProvider.future);
               final playlistRepo = ref.read(playlistMateriaisRepositoryProvider);
@@ -663,17 +689,19 @@ class _MaterialCard extends ConsumerWidget {
             }
           }
           
-          // Determinar a rota baseada no tipo de material
+          // Determinar a rota: priorizar extensão do arquivo para evitar bug quando
+          // materialType vem errado (ex. "Letra") e o arquivo é PDF/áudio
           final path = material.path;
-          
-          // Verifica se o path parece ser texto (lyrics) em vez de arquivo
-          // Textos geralmente são longos, não têm extensão de arquivo, e não contêm "/"
-          final isLikelyText = path.length > 100 && 
-                              !path.contains('.pdf') && 
-                              !path.contains('.mp3') && 
-                              !path.contains('/') &&
-                              !path.contains('\\');
-          
+          final extension = path.contains('.')
+              ? path.split('.').last.toLowerCase()
+              : '';
+
+          final isLikelyText = path.length > 100 &&
+              !path.contains('.pdf') &&
+              !path.contains('.mp3') &&
+              !path.contains('/') &&
+              !path.contains('\\');
+
           String route;
           Map<String, String> queryParams = {
             'path': material.path,
@@ -682,21 +710,18 @@ class _MaterialCard extends ConsumerWidget {
             'materialKindName': materialKindName,
           };
 
-          // Se parece ser texto, sempre usa leitor de letras
-          if (isLikelyText || materialTypeName.contains('text') || materialTypeName.contains('lyric')) {
+          if (extension == 'pdf' || path.toLowerCase().contains('.pdf')) {
+            route = '/reader/pdf/${material.id}';
+          } else if (['mp3', 'wav', 'ogg', 'm4a'].contains(extension) ||
+              materialTypeName.contains('audio')) {
+            route = '/reader/audio/${material.id}';
+          } else if (isLikelyText ||
+              materialTypeName.contains('text') ||
+              materialTypeName.contains('lyric') ||
+              materialTypeName == 'letra') {
             route = '/reader/lyrics/${material.id}';
           } else if (materialTypeName.contains('pdf')) {
-            // Só abre como PDF se realmente parece ser um arquivo PDF
-            final extension = path.split('.').last.toLowerCase();
-            if (extension == 'pdf' || path.contains('.pdf')) {
-              route = '/reader/pdf/${material.id}';
-            } else {
-              // Se o tipo é PDF mas o path não tem extensão .pdf, pode ser texto
-              route = '/reader/lyrics/${material.id}';
-            }
-          } else if (materialTypeName.contains('audio') ||
-              ['mp3', 'wav', 'ogg', 'm4a'].contains(path.split('.').last.toLowerCase())) {
-            route = '/reader/audio/${material.id}';
+            route = '/reader/pdf/${material.id}';
           } else {
             route = '/reader/lyrics/${material.id}';
           }

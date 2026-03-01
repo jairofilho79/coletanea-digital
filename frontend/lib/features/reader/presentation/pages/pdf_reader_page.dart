@@ -199,6 +199,62 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
     }
   }
 
+  Future<void> _showDisponibilizarOfflineDialog() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF4B2D2B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFFD4AF37),
+            width: 2,
+          ),
+        ),
+        title: const Text(
+          'Disponibilizar offline',
+          style: TextStyle(
+            color: Color(0xFFD4AF37),
+            fontFamily: 'EB Garamond',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Deseja baixar este material para uso offline?',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Color(0xFFD4AF37)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A3B39),
+              foregroundColor: Colors.white,
+              side: const BorderSide(
+                color: Color(0xFFD4AF37),
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Disponibilizar'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      setState(() => _isLoading = true);
+      await _downloadPdfBytes();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,64 +287,58 @@ class _PdfReaderPageState extends ConsumerState<PdfReaderPage> {
                 ),
               ),
             ),
-          // Botão de opções (3 pontos verticais)
-          // Preparado para futuras opções (download, compartilhar, etc.)
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Opções',
-            onSelected: (value) {
-              // Futuramente: implementar ações do menu
-              // Exemplo:
-              // if (value == 'download') {
-              //   // Implementar download
-              // } else if (value == 'share') {
-              //   // Implementar compartilhamento
-              // }
-            },
-            itemBuilder: (context) => [
-              // Por enquanto, menu preparado para futuras opções
-              // Quando adicionar opções reais, remover este item temporário:
-              const PopupMenuItem(
-                value: 'placeholder',
-                enabled: false,
-                child: Text(
-                  'Opções em breve',
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.grey,
-                  ),
+          // Botão de opções (3 pontos) — estilo Coletânea, item offline
+          Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: const Color(0xFFD4AF37),
+              dividerTheme: const DividerThemeData(
+                color: Color(0xFFD4AF37),
+                thickness: 1,
+                space: 0,
+              ),
+            ),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'Opções',
+              color: const Color(0xFF4B2D2B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(
+                  color: Color(0xFFD4AF37),
+                  width: 2,
                 ),
               ),
-              // Exemplo de opções futuras:
-              // const PopupMenuItem(
-              //   value: 'download',
-              //   child: Row(
-              //     children: [
-              //       Icon(Icons.download, size: 20),
-              //       SizedBox(width: 12),
-              //       Text('Baixar PDF'),
-              //     ],
-              //   ),
-              // ),
-              // const PopupMenuItem(
-              //   value: 'share',
-              //   child: Row(
-              //     children: [
-              //       Icon(Icons.share, size: 20),
-              //       SizedBox(width: 12),
-              //       Text('Compartilhar'),
-              //     ],
-              //   ),
-              // ),
-            ],
-          ),
-          // Indicador de cache offline (apenas plataformas não-web)
-          if (_pdfBytes != null && !kIsWeb)
-            const IconButton(
-              icon: Icon(Icons.download_done),
-              tooltip: 'Disponível offline',
-              onPressed: null,
+              onSelected: (value) {
+                if (value == 'offline' && _pdfBytes == null && !kIsWeb) {
+                  _showDisponibilizarOfflineDialog();
+                }
+              },
+              itemBuilder: (context) => [
+                if (!kIsWeb)
+                  PopupMenuItem<String>(
+                    value: 'offline',
+                    child: Row(
+                      children: [
+                        Icon(
+                          _pdfBytes != null
+                              ? Icons.download_done
+                              : Icons.download,
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _pdfBytes != null
+                              ? 'Disponível offline'
+                              : 'Disponibilizar offline',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
       body: _buildBody(),

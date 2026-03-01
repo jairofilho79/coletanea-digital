@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_bar_title_with_logo.dart';
+import '../../../../core/widgets/app_dialog.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../providers/lista_providers.dart';
 import '../widgets/lista_card.dart';
@@ -97,138 +98,29 @@ class ListasPage extends ConsumerWidget {
     );
   }
 
-  void _showCreateListaDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
+  void _showCreateListaDialog(BuildContext context, WidgetRef ref) async {
+    final result = await AppDialog.input(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF4B2D2B), // Fundo vermelho (marrom avermelhado escuro)
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: Color(0xFFD4AF37), // Borda dourada
-            width: 2,
-          ),
+      title: 'Nova Lista',
+      fields: [
+        const AppDialogField(
+          key: 'name',
+          hint: 'Ex: Louvores de domingo',
+          autofocus: true,
         ),
-        title: const Text(
-          'Nova Lista',
-          style: TextStyle(
-            color: Color(0xFFD4AF37), // Texto dourado no título
-            fontFamily: 'EB Garamond',
-            fontWeight: FontWeight.bold,
-          ),
+        const AppDialogField(
+          key: 'description',
+          hint: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
+          maxLines: 2,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Ex: Louvores de domingo',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                  fontSize: 16,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A), // Texto preto ao digitar
-              ),
-              decoration: InputDecoration(
-                hintText: 'Lista de glorificação no dia 11/03/2017 para o casamento de...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF5A5A5A), // Placeholder cinza escuro
-                  fontSize: 16,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5E6D3), // Fundo bege do input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD4AF37), // Borda dourada
-                    width: 2,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF4D03F), // Borda dourada clara quando focado
-                    width: 2,
-                  ),
-                ),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(
-                color: Color(0xFFD4AF37), // Texto dourado
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                await ref.read(listaRepositoryProvider).createLista(
-                      name: nameController.text,
-                      description: descriptionController.text.isEmpty
-                          ? null
-                          : descriptionController.text,
-                    );
-                ref.invalidate(listasProvider);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              }
-            },
-            child: const Text('Criar'),
-          ),
-        ],
-      ),
+      ],
     );
+    if (result != null && context.mounted) {
+      await ref.read(listaRepositoryProvider).createLista(
+            name: result['name']!,
+            description: result['description']!.isEmpty ? null : result['description'],
+          );
+      ref.invalidate(listasProvider);
+    }
   }
 }
